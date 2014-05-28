@@ -1,0 +1,64 @@
+{
+  "name": "Blueshift",
+  "version": "0.1.1",
+  "description": "fast-worwaard to the future",
+  "maintainers": [
+    {
+      "name": "Kenneth Bentley",
+      "email": "mechanicofthesequence@gmail.com",
+      "web": "http://hamsternippl.es"
+    }
+  ],
+  "bugs": "http://github.com/duralog/Blueshift/issues",
+  "dependencies": {},
+  "devDependencies": {},
+  "directories": {
+    "lib": "./lib"
+  },
+  "js-flags": "--harmony-proxies --harmony_collections --harmony_generators",
+  "keywords": [
+    "JavaScript",
+    "CodeMirror",
+    "Editor"
+  ],
+  "licenses": [
+    {
+      "type": "AGPL-3.0"
+    }
+  ],
+  "main": "lib/loading.html",
+  "node-remote": "localhost:1155",
+  "repository": "heavyk/Blueshift",
+  "runtimeDependencies": {
+    "LiveScript": "latest",
+    "component": "0.13.0",
+    "component-builder": "0.6.3",
+    "debug": "latest",
+    "fibers": "*",
+    "gridfs-stream": "0.4.0",
+    "mongoose": "3.6.1",
+    "mongoose-auth": "0.0.12",
+    "mongoose-createdmodified": "0.0.2",
+    "mongoose-lifecycle": "1.0.0",
+    "mongoose-social-user": "0.0.20",
+    "mongoose-times": "0.1.0",
+    "mongoose-troop": "0.0.8",
+    "redis": "0.8.2"
+  },
+  "scripts": {
+    "test": "node ./test/run.js",
+    "install": "node_modules/LiveScript/bin/lsc ./src/scripts/install.ls"
+  },
+  "webkit": {
+    "plugin": true
+  },
+  "window": {
+    "frame": true,
+    "height": 180,
+    "position": "center",
+    "resizable": true,
+    "show": true,
+    "toolbar": true,
+    "width": 150
+  }
+}
