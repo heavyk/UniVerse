@@ -461,8 +461,9 @@ class UniVerse extends Fsm
 
 					bundle_task = task.branch "bundle content..."
 					_.each TARGET_UNIVERSE.bundle, (v, b) ->
-						console.log "bundled:", b, "@", v
+						@debug "checking bundle: (%s@%s) satisfies (%s@%s)", b, UNIVERSE.bundle[b], b, TARGET_UNIVERSE.bundle[b]
 						unless Semver.satisfies UNIVERSE.bundle[b], TARGET_UNIVERSE.bundle[b]
+							@debug "bundling: %s@%s", b, v
 							bundle_task.push (done) ->
 								@exec "bundle:#b", v, task, done
 					task.choke (done) ->
