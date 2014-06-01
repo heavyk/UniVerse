@@ -14,29 +14,29 @@ Fs = require \fs
 # 	_console_log ...
 
 child_process = require \child_process
-_spawn = child_process.spawn
-child_process.spawn = (f) ->
-	# _console_log "local log...", f, &.length
-	try
-		console.log "spawn", &.0, &.1
-		_spawn ...
-	catch e
-		console.log "ERROR::::"
-		console.log e.stack
+# _spawn = child_process.spawn
+# child_process.spawn = (f) ->
+# 	# _console_log "local log...", f, &.length
+# 	try
+# 		console.log "spawn", &.0, &.1
+# 		_spawn ...
+# 	catch e
+# 		console.log "ERROR::::"
+# 		console.log e.stack
 
 
-UniVerse = require '../universe' .UniVerse
+uV = require '../universe'# .uV
 { ToolShed, Fsm } = require \MachineShop
-require \shelljs/global
+# require \shelljs/global
 
-console.log "universe", UniVerse.UNIVERSE_PATH
-uV = new UniVerse
+# console.log "universe", uV.begin
+# # uV = new uV
+# narrator <- uV.exec \begin \Affinaty@latest
+# narrator.on \ready ->
+# 	console.log "we're ready to tell of our experiences now"
 
-uV.once \ready ->
-	console.log "uv??...", uV.state
-
-console.log "TODO: load up PublicDB with the universe paths"
-return
+# console.log "CURRENT: get EtherDB running the services correctly"
+# return
 
 arango_path = Path.resolve "#{__dirname}/../../third_party/ArangoDB"
 node_path = Path.resolve "#{__dirname}/../../third_party/node"

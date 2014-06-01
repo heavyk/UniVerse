@@ -109,6 +109,7 @@ class StoryBook extends Fsm
 		else if typeof @_el isnt \object
 			throw new Error "I dunno what to do! "+typeof @_el
 
+		ToolShed.extend @, Fabuloso
 		super "StoryBook"
 		if typeof id is \string
 			@debug.todo "load up a storybook from the database of a defined id (figurehead)"
@@ -125,10 +126,7 @@ class StoryBook extends Fsm
 		* \poem
 		* \footer
 		* \poem_footer
-	elements:
-		Poem:
-			Affinaty: \latest
-			Sandra: \latest
+
 	_render: -> @_el
 	render: (E) ->
 		# E \div null "woahhh"
@@ -153,13 +151,6 @@ class StoryBook extends Fsm
 			cE = self.refs.window.cE
 			aC = self.refs.window.aC
 			path = self.state
-			# console.error "priorState", e.fromState, e.fromState
-			execs = Object.keys @states[e.toState]
-			_.each @_derivitaves, (v, derivitave) ~>
-				d_name = "derivitave.#derivitave"
-				for exec in execs
-					if exec is d_name then @exec exec
-
 			_.each self._renderers, (renderer, i) ~>
 				if typeof self.state isnt \undefined
 					# if ~self.state.indexOf '@'
@@ -215,7 +206,7 @@ class StoryBook extends Fsm
 			# 		console.error "POEM:", poem
 			# 		# done!
 
-			'derivitave.node-webkit': !->
+			'node-webkit:onenter': !->
 				console.log "doing uninitialized:node-webkit"
 				process.removeAllListeners \uncaughtException
 				process.on \uncaughtException (err) ~>
@@ -223,7 +214,7 @@ class StoryBook extends Fsm
 					throw err
 				#TODO: add watcher
 
-			'derivitave.browser': !->
+			'browser:onenter': !->
 				$ window .bind \click, (e) ~>
 					# console.log "click", e
 					target = e.target

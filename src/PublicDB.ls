@@ -43,7 +43,7 @@ Http = require \http
 #Schema = require 'mongoose/lib/blueprint'
 #Model = require 'mongoose/lib/blueprint'
 
-{ Fsm, ToolShed, _ } = require 'MachineShop'
+{ Fsm, Fabuloso, ToolShed, _ } = require 'MachineShop'
 { Debug } = ToolShed
 
 # UniVerse = require '../UniVerse'
@@ -322,7 +322,7 @@ set_path = (obj, str, val) ->
 
 
 # al final, a blueprint will also be a poem (to be able to edit it)
-export Blueprint = (refs, opts) ->
+Blueprint = (refs, opts) ->
 	if typeof opts is \string
 		incantation = opts
 		if ~(i = incantation.indexOf ':')
@@ -515,19 +515,18 @@ Blueprint.db_default = (db) ->
 #TODO: if we're a node instance, allow the proxy interfaces for Config (blueprint-less records)
 #       same thing for scope
 #TODO: if node instance save into redis and auto update through dnode
-export class LocalDB extends Fsm
+class LocalDB extends Fsm
 	(options) ->
 		# debugger
+		ToolShed.extend @, Fabuloso
 		super "LocalDB"
 
 	states:
 		uninitialized:
 			onenter: ->
-				#task = @task 'initialize...'
-				if typeof options is \function
-					cb = options
-					options = void
-				#task.push (done) ~>
+				@transition \ready
+			'node:onenter': ->
+			'browser:onenter': ->
 				@storage = new _.LargeLocalStorage options
 				@storage.initialized.fail (err) ~>
 					console.log "local storage error:", err
@@ -546,6 +545,10 @@ export class LocalDB extends Fsm
 
 	for k in <[get set remove list clear]>
 		@@::[k] = ((k) -> (key, options, cb) ->
+			throw new Error "TODO: implement a k/v storage..."
+			# look into doing this over webrtc
+			# rip off something like this: https://foundationdb.com/operations
+
 			if @state is \error
 				if typeof cb is \function
 					cb {code: \ERRNOTAVAILABLE}
@@ -557,7 +560,7 @@ export class LocalDB extends Fsm
 	@@::query = (query) ->
 		console.log "TODO: query the LocalDB/PubliCDB"
 
-export PublicDB = (opts, db_ready) ->
+PublicDB = (opts, db_ready) ->
 	debug = Debug "PublicDB"
 	if typeof opts is \string
 		opts = {name: opts}
@@ -760,4 +763,7 @@ export PublicDB = (opts, db_ready) ->
 	return self
 
 PublicDB.dbs = {}
-#export db = PublicDB {}
+
+export PublicDB
+export LocalDB
+export Blueprint

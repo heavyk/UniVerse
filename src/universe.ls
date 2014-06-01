@@ -14,11 +14,14 @@ Ini = require \ini
 sh = require \shelljs
 
 # Archivista = require \Archivista
+if typeof process is \object
+	process.env.MACHINA = 1234
+
 { ToolShed, Fsm, Fabuloso } = require \MachineShop
 
 { PublicDB, LocalDB, Blueprint } = require './PublicDB'
-# Library = require './Library' .Library
-# StoryBook = require './StoryBook' .StoryBook
+EtherDB = require './EtherDB' .EtherDB
+Library = require './Library' .Library
 
 Repo = require './repo' .Repo
 
@@ -33,7 +36,7 @@ MULTIVERSE = require Path.join __dirname, 'multiverse.json'
 
 var UNIVERSE_ID, UNIVERSE_PATH, UNIVERSE_JSON, UNIVERSE_LIB_PATH, UNIVERSE_SRC_PATH, UNIVERSE_BIN_PATH, UNIVERSE_MODULES_PATH
 var TARGET_UNIVERSE
-set_universe_paths = (id) ->
+set_uV_paths = (id) ->
 	# TODO: make this a getter/setter on the global object
 	UNIVERSE_ID := id
 	UNIVERSE_PATH := Path.join MULTIVERSE_PATH, id
@@ -53,7 +56,7 @@ Object.defineProperty exports, "UNIVERSE_SRC_PATH", get: -> UNIVERSE_SRC_PATH
 Object.defineProperty exports, "UNIVERSE_BIN_PATH", get: -> UNIVERSE_BIN_PATH
 
 # facilmente is the default universe
-set_universe_paths \sencillo
+set_uV_paths \sencillo
 
 WeakMap = global.WeakMap
 Proxy = global.Proxy
@@ -73,7 +76,7 @@ Proxy = global.Proxy
 # var UNIVERSE_PATH, UNIVERSE_JSON
 # var UNIVERSE_MODULES_PATH, UNIVERSE_LIB_JSON, UNIVERSE_LIB_PATH
 var UNIVERSE
-var _universe
+var _uV
 
 CORES = 8
 OS = switch process.platform
@@ -95,42 +98,23 @@ global.ARCH = ARCH = switch process.arch
 #    -> _.each module.versions, (mod, v) ->
 
 class UniVerse extends Fsm
-	# INCOMPLETE: for now, the id just looks up the universe in sencillo... but it should do a lookup if it doesn't know what it is
-	#
-	# id: id for this universe
-	# 	Sencillo.universe[id]
-	# 	github://user/repo [TODO]
-	# 	git://uri [TODO]
-	# 	git://uri [TODO]
-	# opts:
-	# 	name: ??
-	# 	path:
 	(id, opts) ->
-		refs = {UniVerse: @}
-		_universe := this
-		@persona = false
-		# for now, the session is with the universe.
-		# I think this is the most logical
-
-		# refs.book = @book = new StoryBook
-		# @library = new Library
-		# @archive = new PublicDB name: \MultiVerse # more on the MultiVerse later :)
+		refs = {uV: @}
+		# refs.akasha = @akasha = new EtherDB name: \MultiVerse # more on the MultiVerse later :)
+		refs.akasha = @akasha = new EtherDB name: \MultiVerse # more on the MultiVerse later :)
 		refs.archive = @archive = new PublicDB name: \UniVerse
 		refs.library = @library = new Library refs, name: \sencillo # host: ...
+		@refs = refs
 
 		ToolShed.extend @, Fabuloso
 		super "UniVerse", opts
+		_uV := this
 
 	initialize: (id, opts) ->
 		@_modules = {}
 		if not id
 			id = \sencillo
 		@exec \load, id
-
-	begin: (refs, el, id) ->
-		# refs <<< @refs
-		refs.library = @library
-		new StoryBook refs, el, id
 
 	states:
 		uninitialized:
@@ -242,14 +226,14 @@ class UniVerse extends Fsm
 		download:
 			onenter: ->
 				# INCOMPLETE need to download the universe from the master universe
-				# this should also read, `construct_universe`
+				# this should also read, `construct_uV`
 				console.log "TODO: add updater..."
 				return @transition \build
 				build = @task 'download universe'
-				@updater = Updater {
-					manifest: "https://raw.github.com/MechanicOfTheSequence/UniVerse/master/manifest.json"
-					path: UNIVERSE_PATH
-				}
+				# @updater = Updater {
+				# 	manifest: "https://raw.github.com/MechanicOfTheSequence/UniVerse/master/manifest.json"
+				# 	path: UNIVERSE_PATH
+				# }
 
 				build.end (err, res) ->
 					console.error "done"
@@ -411,9 +395,26 @@ class UniVerse extends Fsm
 				*/
 
 	cmds:
-		git_clone: (uri, path, task, done) ->
-			# ToolShed.exec cmd, {cwd}, done
+		begin: ->
+			# console.log " [ * ] starting up the universe"
+			@debug.info "starting up the universe"
 
+		'node:begin': (opts, cb) ->
+			# new StoryBook refs, opts
+			# new Http
+			@debug.info "starting up uV::Narrator"
+			Narrator = require './Narrator' .Narrator
+
+			cb new Narrator @refs, opts
+			# walker = Walk \processes
+			# walker.on \file (path, st) ->
+			# 	console.log "processes:file", &
+
+		'browser:begin': (el, cb) ->
+			# refs <<< @refs
+			refs.library = @library
+			StoryBook = require './StoryBook' .StoryBook
+			cb new StoryBook @refs, el, id
 
 		load: (id, task, done) ->
 			console.log "LOAD::::", id
@@ -425,22 +426,20 @@ class UniVerse extends Fsm
 			unless repos = TARGET_UNIVERSE.repos
 				return
 
-			set_universe_paths id
-			empty_universe = {} <<< TARGET_UNIVERSE
-			empty_universe.bundle = {}
-			empty_universe.repos = {}
+			set_uV_paths id
+			empty_uV = {} <<< TARGET_UNIVERSE
+			empty_uV.bundle = {}
+			empty_uV.repos = {}
 			console.log "going to read:" UNIVERSE_JSON
-			UNIVERSE := ToolShed.Config UNIVERSE_JSON, empty_universe
+			UNIVERSE := ToolShed.Config UNIVERSE_JSON, empty_uV
 			UNIVERSE.once \ready (config, data) ~>
 
 				# the package should have bundle: {version, dependencies} etc.
 				# @transition \install_deps
 				# @transition \load_modules
-				console.log "UNIVERSE", UNIVERSE
-				task = @task "UniVerse starting up.."
+				task = @task "starting up.."
 				task.concurrency = 20
 				modules_path = Path.join UNIVERSE_SRC, \node_modules
-				console.log "walking...", UNIVERSE_MODULES_PATH
 				# walker = Walk UNIVERSE_MODULES_PATH, max_depth: 1
 				# walker.on \directory (path, st) ~>
 				# 	console.log "dir:", path
@@ -747,10 +746,26 @@ class UniVerse extends Fsm
 # 				vv := v
 # 				mod := m
 # 		return mod
-# export global.UniVerse = UniVerse
-Object.defineProperty exports, "UniVerse", {
+# export global.uV = uV
+if typeof global.abort is \undefined
+	Object.defineProperty global, "abort", {
+		get: ->
+			if typeof uV.error is \function
+				return _uV.error
+			throw new Error " [FATAL] could not continue"
+	}
+if typeof global.uV is \undefined
+	Object.defineProperty global, "uV", {
+		get: ->
+			_uV || _uV := new UniVerse
+			# debugger
+			return _uV
+	}
+Object.defineProperty exports, "uV", {
 	get: ->
-		_universe || _universe := new UniVerse
+		_uV || _uV := new UniVerse
 		# debugger
-		return _universe
+		return _uV
 }
+
+export UniVerse
