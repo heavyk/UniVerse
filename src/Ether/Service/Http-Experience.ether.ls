@@ -1,17 +1,11 @@
-# inception: \Image
-# motivation: \Service
-# implementation: \Http
-
-
-inception: \Experience
+inception: \Http
 motivation: \Service
-implementation: \Http
+implementation: \Experience
 possesses:
 	* \Origin
 	* \Agreement
-
 type: \Cardinal
-# Fixed is like an NPM module
+# Fixed is like an NPM module. it has exports
 #
 version: \0.1.0
 description: "express yourself"
