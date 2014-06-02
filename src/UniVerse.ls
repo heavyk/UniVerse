@@ -99,13 +99,10 @@ global.ARCH = ARCH = switch process.arch
 
 class UniVerse extends Fsm
 	(id, opts) ->
-		refs = {uV: @}
-		# refs.akasha = @akasha = new EtherDB name: \MultiVerse # more on the MultiVerse later :)
-		refs.akasha = @akasha = new EtherDB name: \MultiVerse # more on the MultiVerse later :)
-		refs.archive = @archive = new PublicDB name: \UniVerse
-		refs.library = @library = new Library refs, name: \sencillo # host: ...
-		@refs = refs
-
+		@refs = {
+			uV: @
+			machina = @machina = Fsm.machina
+		}
 		ToolShed.extend @, Fabuloso
 		super "UniVerse", opts
 		_uV := this
@@ -121,13 +118,6 @@ class UniVerse extends Fsm
 			onenter: ->
 				console.log "initializing..."
 				console.log "TODO: install procstreams"
-				# switch OS
-				# | \osx =>
-				# 	CORES := $p "sysctl hw.ncpu" .pipe "awk '{print $2}'" .data (err, stdout, stderr) ->
-				# 		if stdout then CORES := Math.round (''+stdout) * 1
-				# | \linux =>
-				# 	CORES := $p "grep -c ^processor /proc/cpuinfo" .data (err, stdout, stderr) ->
-				# 		if stdout then CORES := Math.round (''+stdout) * 1
 				if @id
 					@path = Path.join MULTIVERSE_PATH, @id
 					console.log "mkdir", @path
@@ -136,6 +126,17 @@ class UniVerse extends Fsm
 							console.log "ERROR MAKING DIR", err
 							throw err
 						# UNIVERSE.path = @path
+
+			'node:onenter': ->
+				console.log "NODE UNIVERSE"
+				# this is a pretty interesting concept that an instantiation is extending another instantiation.
+				# we could arrange these like puzzle pieces and create really dynamic machines
+				ToolShed.extends @refs.machina, @architect = new Architect refs, name: "42"
+				@refs.akasha = @akasha = new EtherDB name: \MultiVerse
+
+			'browser:onenter': ->
+				@refs.archive = @archive = new PublicDB name: \UniVerse
+				@refs.library = @library = new Library refs, name: \sencillo # host: ...
 
 		install_deps:
 			onenter: ->
@@ -400,6 +401,7 @@ class UniVerse extends Fsm
 			@debug.info "starting up the universe"
 
 		'node:begin': (opts, cb) ->
+			console.log "begin", opts, cb
 			# new StoryBook refs, opts
 			# new Http
 			@debug.info "starting up uV::Narrator"

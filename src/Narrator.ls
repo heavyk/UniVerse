@@ -76,14 +76,19 @@ class Narrator extends Fsm
 			# 	path = '/'
 
 			# @states[name] = new Book refs, fqvn
-			# bp = uV.archive.get \Poem, name
+			# eth = uV.archive.get \Poem, name
 			# debugger
 			# uV.archive.exec \fetch "Poem/#name", (err, bp) ->
 
-			uV.library.exec \fetch {encantador: "StoryBook" incantation: name, version, narrator: @}, (err, bp) ~>
-				# bp.refs <<< @refs
+			uV.machina.exec \fetch {
+				inception: "StoryBook"
+				implementation: name
+				version: version
+				narrator: @
+			}, (err, eth) ~>
+				# eth.refs <<< @refs
 				# debugger
-				bp.once_initialized ~>
+				eth.once_initialized ~>
 					@debug "POEM INITIALIZED.... going to imbue the poem now..."
 					noem = name+'@'+version
 					@debug.todo "replace_path here with the poem loaded ... later replace again"
@@ -107,57 +112,4 @@ class Narrator extends Fsm
 					# debugger
 					# done!
 
-	# replace_path: (data, title) ->
-	# 	window.history.replaceState data, title, data.path
-	# push_path: (data, title) ->
-	# 	window.history.pushState data, title+Math.random!toString(32).slice(2), data.path
-
-	# route: (path, is_back) ->
-	# 	window_href = window.location.href + ''
-	# 	window_href_base = window_href.substr 0, window_href.lastIndexOf '/'
-	# 	console.error "routing path", path, is_back, window_href
-	# 	poem = @state
-	# 	# if ~path.indexOf window_href_base
-	# 	# 	path = path.substr window_href_base.length
-	# 	# else
-	# 	# 	if ~path.indexOf "://"
-	# 	# 		proto = path.split '://'
-	# 	# 		if proto.length > 1
-	# 	# 			[proto, path] = proto
-	# 	# 		else
-	# 	# 			proto = \http
-	# 	# 			path = proto.0
-	# 	# 	#[host, path] = path.split '/'
-	# 	# 	if (i = path.indexOf '/') > 0
-	# 	# 		host = path.substr 0, i
-	# 	# 		path = path.substr i
-	# 	# 	else if i is 0
-	# 	# 		host = cur_host
-	# 	# 		path = path
-	# 	# 	else
-	# 	# 		host = path
-	# 	# 		path = '/'
-	# 	url = Url.parse path
-	# 	if url.path
-	# 		path = url.path
-	# 	if url.protocol
-	# 		proto = url.protocol
-
-	# 	querystring = ''
-	# 	if i = ~path.indexOf '?'
-	# 		querystring = path.slice i + 1
-	# 		path = path.slice 0, i
-
-	# 	console.log "route:", path, "->", @path
-	# 	if path isnt @path
-	# 		console.error "before transition", path, {poem, path, mun}
-	# 		poem = @states[@state].render
-	# 		# debugger
-	# 		poem.transition path, {poem, path}
-	# 		console.log "after transition"
-
-
-# console.log "before extend:", Narrator::initialize
-# debugger
-ToolShed.extend Narrator::, Fabuloso
 export Narrator

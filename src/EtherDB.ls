@@ -29,10 +29,6 @@ set_path = (obj, str, val) ->
 	obj[str.shift!] = val
 
 
-#TODO: store the blueprint into arango...
-#TODO: if we're a node instance, allow the proxy interfaces for Config (blueprint-less records)
-#       same thing for scope
-#TODO: if node instance save into redis and auto update through dnode
 class LocalDB extends Fsm
 	(options) ->
 		# debugger
