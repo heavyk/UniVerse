@@ -15,19 +15,13 @@ class Library extends Fsm
 	(@refs, opts) ->
 		if typeof refs isnt \object
 			throw new Error "you need some references for your library"
-		# else if typeof refs.book isnt \object
-		# 	throw new Error "you need a reference to a PoetryBook [poetry]"
 		else if typeof refs.archive isnt \object
 			throw new Error "you need a reference to your PublicDB blueprints [storage]"
 
 		@blueprints = {}
-		# @books = {}
 		@__loading = {}
 		@memory = {}
-		# @session = new Session
-
 		@archive = refs.archive
-
 
 		super "Library"
 

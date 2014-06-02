@@ -1,12 +1,10 @@
-inception: \Http
 motivation: \Service
-implementation: \Experience
+implementation: \Http
+inception: \Experience
 possesses:
 	* \Origin
 	* \Agreement
-type: \Cardinal
-# Fixed is like an NPM module. it has exports
-#
+type: \Mutable
 version: \0.1.0
 description: "express yourself"
 poetry:

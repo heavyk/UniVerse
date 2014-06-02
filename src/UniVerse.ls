@@ -13,11 +13,20 @@ Semver = require \semver
 Ini = require \ini
 sh = require \shelljs
 
+# I imagine that we could make LiveScript compile the requires something like this:
+# Object.defineProperty global, "Repo",
+# 	get: ->
+# 		version = module.dependencies.Repo
+#  ... something like that. more later. gatta go.
+
+# OH! the Archivista will take care of all file downloads.
+# it'll be a process, that actually will save into GridFS as well
+# also, I want to have it work with zofli to get best compression results
 # Archivista = require \Archivista
 if typeof process is \object
 	process.env.MACHINA = 1234
 
-{ ToolShed, Fsm, Fabuloso } = require \MachineShop
+{ ToolShed, Fsm, Fabuloso, Machina } = require \MachineShop
 
 { PublicDB, LocalDB, Blueprint } = require './PublicDB'
 EtherDB = require './EtherDB' .EtherDB
@@ -97,12 +106,25 @@ global.ARCH = ARCH = switch process.arch
 #  -> UniVerse.modules.mymodule['4.3.x'] (does magic to get that module)
 #    -> _.each module.versions, (mod, v) ->
 
+class Architect extends Fsm
+	(refs, opts) ->
+		super "Architect"
+
+	states:
+		uninitialized:
+			onenter: ->
+				@transition \ready
+
+		ready:
+			onenter: ->
+				console.log "TheArchitect is ready!"
+
 class UniVerse extends Fsm
 	(id, opts) ->
-		@refs = {
-			uV: @
-			machina = @machina = Fsm.machina
-		}
+		refs = uV: @
+		refs.machina = @machina = new Machina refs, name: \TheArchitect
+		@refs = refs
+
 		ToolShed.extend @, Fabuloso
 		super "UniVerse", opts
 		_uV := this
@@ -131,12 +153,12 @@ class UniVerse extends Fsm
 				console.log "NODE UNIVERSE"
 				# this is a pretty interesting concept that an instantiation is extending another instantiation.
 				# we could arrange these like puzzle pieces and create really dynamic machines
-				ToolShed.extends @refs.machina, @architect = new Architect refs, name: "42"
+				ToolShed.extend @refs.machina, @architect = new Architect @refs, name: "42"
 				@refs.akasha = @akasha = new EtherDB name: \MultiVerse
 
 			'browser:onenter': ->
 				@refs.archive = @archive = new PublicDB name: \UniVerse
-				@refs.library = @library = new Library refs, name: \sencillo # host: ...
+				@refs.library = @library = new Library @refs, name: \sencillo # host: ...
 
 		install_deps:
 			onenter: ->

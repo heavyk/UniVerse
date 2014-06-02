@@ -23,6 +23,8 @@
     "leveldown": "ssh://duralog.github.com:duralog/node-leveldown#0.11-wip",
     "levelup": "~0.18.3",
     "path-to-regexp": "~0.1.2",
+    "postal": "^0.10.0",
+    "procstreams": "^0.3.0",
     "shoe": "~0.0.15",
     "suspend": "~0.5.1",
     "thunkify": "~2.1.1",
@@ -64,7 +66,8 @@
   },
   "scripts": {
     "test": "node ./test/run.js",
-    "install": "node_modules/LiveScript/bin/lsc ./src/scripts/install.ls -n --harmony"
+    "install": "node_modules/LiveScript/bin/lsc ./src/scripts/install.ls -n --harmony",
+    "start": "node_modules/LiveScript/bin/lsc ./src/scripts/start.ls -n --harmony"
   },
   "webkit": {
     "plugin": true

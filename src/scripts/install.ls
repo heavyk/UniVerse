@@ -35,7 +35,7 @@ uV.exec \begin \Affinaty@latest (narrator) ->
 	narrator.once \ready ->
 		console.log "we're ready to tell of our experiences now"
 
-console.log "CURRENT: get EtherDB running the services correctly"
+console.log "CURRENTLY WORKING ON: getting EtherDB imbuing the Ether correctly and starting the services"
 return
 
 arango_path = Path.resolve "#{__dirname}/../../third_party/ArangoDB"

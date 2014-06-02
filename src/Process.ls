@@ -2,7 +2,7 @@
 { ToolShed, Fsm } = require \MachineShop
 
 
-class Motivation extends Fsm
+class Motivator extends Fsm
 	(@narrator, @_eth, key, opts) ->
 		self = @
 		self._is_dirty = false
@@ -22,12 +22,12 @@ class Motivation extends Fsm
 			self.id = id = if _eth.type is \Mutable
 				'quest:'+key
 			else
-				_eth.incantation+'/'+key
+				_eth.inception+'/'+key
 		else
-			self.id = _eth.incantation+'/'+client_key
+			self.id = _eth.inception+'/'+client_key
 
 		@poetry = narrator.poetry
-		@memory = narrator.memory[_eth.incantation]
+		@memory = narrator.memory[_eth.inception]
 		@_parts = {}
 		# @initialState = null
 		# if not id
@@ -59,19 +59,6 @@ class Motivation extends Fsm
 		if not @_xp
 			@_xp = {_k: client_key}
 
-		if typeof self._el is \undefined then self._el = \div
-		if typeof self._el is \string
-			el_opts = if _eth.encantador then {c: _eth.encantador+' '+_eth.incantation+' container-fluid'} else {}
-		else if typeof self._el is \function
-			self._el = self._el.call this, cE
-		else if typeof self._el isnt \object
-			throw new Error "I dunno what to do! "+typeof self._el
-		self._el.dataset.blueprint = _eth.fqvn
-		self._el._machina = self
-		# console.error "Motivation: gonna call super", _eth._blueprint.machina
-		# console.log "before super:", @states.ready, this
-
-
 		if _eth.type is \Fixed and id
 			@_loading = key
 
@@ -80,7 +67,7 @@ class Motivation extends Fsm
 			# @debug.warn "your bluprint doesn't define any parts"
 			@parts = {}
 
-		super "#{_eth.encantador}:#{_eth.incantation}(#{if key => key else if _eth.type is \Fixed then \new else _eth.type })"
+		super "#{_eth.implementation}:#{_eth.inception}(#{if key => key else if _eth.type is \Fixed then \new else _eth.type })"
 
 		if not @id
 			debugger
@@ -165,7 +152,7 @@ class Motivation extends Fsm
 	# id: ~
 	# 	-> @_xp._id
 	_render: ->
-		# if @encantador is \Poem
+		# if @implementation is \Poem
 		# debugger
 		@_el
 
@@ -304,7 +291,7 @@ class Motivation extends Fsm
 
 			# assert typeof @_parts is \object
 			# be sure we have all parts, and in the right order
-			# if @_eth.incantation is \Login
+			# if @_eth.inception is \Login
 			# 	debugger
 			# 	console.log "...", part_order
 			if part_order
@@ -323,7 +310,7 @@ class Motivation extends Fsm
 				# remove remaining...
 
 				part = @_el.childNodes[part_order.length]
-				# if @_eth.incantation is \Login
+				# if @_eth.inception is \Login
 				# 	debugger
 				# 	console.log "...", part_order
 				while part and part = part.nextSibling
@@ -331,7 +318,7 @@ class Motivation extends Fsm
 
 
 			do_render = (renderer) ->
-				# if @_eth.incantation is \Login
+				# if @_eth.inception is \Login
 				# 	debugger
 				# 	console.log "...", renderer
 				if typeof self.state isnt \undefined
@@ -410,7 +397,7 @@ class Motivation extends Fsm
 							poem.transition p, url
 							return false
 			#@transition \invalidstate
-			@debug.error "oh shit we're invalid (#{e.state} -> #{e.attemptedState}) %s", @_eth.encantador
+			@debug.error "oh shit we're invalid (#{e.state} -> #{e.attemptedState}) %s", @_eth.implementation
 			@debug.todo "moved to invalid state... if in debug mode, try to load the bluprint so you get to make the state right there..."
 			debugger
 
@@ -504,21 +491,19 @@ class Motivation extends Fsm
 			if typeof key is \function
 				cb = key
 				key = @key
-			incantation = @_eth.incantation
+			inception = @_eth.inception
 			@debug "load: %s", key
 			if typeof key is \number
-				key = @_eth.incantation + '/' + key
+				key = @_eth.inception + '/' + key
 			if typeof key is \string
 				# if not ~key.indexOf '/'
-				# 	key = @_eth.incantation + '/' + key
+				# 	key = @_eth.inception + '/' + key
 				if ~key.indexOf '/'
 					debugger
 				# if ~@id.indexOf \Affinaty
 				# 	debugger
 				# if we're already loading one, then go ahead and abort the load, then load again
 				#TODO: add some sort of timeout here for long loadings.
-				# if experience = @narrator.library.experiences[key]
-				# memory = @narrator.memory[incantation]
 				@memory.on "error:#key" _.bind @'memory:error', @
 
 				if xp = @memory.get key
@@ -576,20 +561,18 @@ class Motivation extends Fsm
 					@_loading = key
 			else
 				throw new Error "we don't know what kind of key this is: #{id} ... unable to load"
-				# if typeof id is \object
 
-				console.log "going to extend this with the "
 				@debug.todo "check to see if it has a key"
 				@debug.todo "@exec"
 
 
 	initialize: ->
-		console.error "Motivation::initialize", @id
+		console.error "Motivator::initialize", @id
 
 	states:
 		uninitialized:
 			onenter: ->
-				console.log "Motivation::uninitialized"
+				console.log "Motivator::uninitialized"
 
 		loading:
 			render: (E) ->
@@ -621,12 +604,12 @@ class Motivation extends Fsm
 
 		ready:
 			onenter: ->
-				console.log "Motivation::ready..."
-				console.log "Motivation: waiting for a command or something"
+				console.log "Motivator::ready..."
+				console.log "Motivator: waiting for a command or something"
 
 			render: (E) ->
 				# debugger
-				E \h4 null "Motivation::ready", "(this is a bug because it stould initialize in the uninitialized state)"
+				E \h4 null "Motivator::ready", "(this is a bug because it stould initialize in the uninitialized state)"
 				# E \h2 null "ready!"#, @get(\name)
 
 			validate: ->
@@ -673,7 +656,7 @@ class Process extends Fsm
 	(@refs, opts) ->
 		# unless refs.window
 		# debugger
-		# @processes[long_incantation] = bp = new Process {incantation, encantador, version}
+		# @processes[long_inception] = bp = new Process {inception, implementation, version}
 					# get the process from the LocalDB / PublicDB / EtherDB
 					# TODO: first get from localstorage, then from the DB...
 					# TODO: if its version is latest then watch it for updates
@@ -681,20 +664,20 @@ class Process extends Fsm
 					#first check local storage, then check disk (if latest)
 					# then, check the db for an update (if it's a semver that's not definative)
 
-			# incantation = opts
-			# if ~(i = incantation.indexOf ':')
-			# 	encantador = incantation.substr 0, i
-			# 	incantation = incantation.substr i+1
-			# 	if ~(i = incantation.indexOf '@')
-			# 		version = incantation.substr i+1
-			# 		incantation = incantation.substr 0, i
-			# opts = {encantador, incantation, version}
+			# inception = opts
+			# if ~(i = inception.indexOf ':')
+			# 	implementation = inception.substr 0, i
+			# 	inception = inception.substr i+1
+			# 	if ~(i = inception.indexOf '@')
+			# 		version = inception.substr i+1
+			# 		inception = inception.substr 0, i
+			# opts = {implementation, inception, version}
 
 		if typeof opts is \object
-			if opts.encantador
-				@encantador = opts.encantador
-			if opts.incantation
-				@incantation = opts.incantation
+			if opts.implementation
+				@implementation = opts.implementation
+			if opts.inception
+				@inception = opts.inception
 			if opts.version
 				@version = opts.version
 		else if typeof opts is \string
@@ -703,127 +686,91 @@ class Process extends Fsm
 			throw new Error "we don't know whot to do with your process, sorry"
 
 		if typeof refs isnt \object
-			@debug.error "you need to pass a 'refs' object to the StoryBook"
+			@debug.error "you need to pass a 'refs' object to the Narrator"
 		else if not refs.narrator
 			throw new Error "you have to reference a Narrator for a ether because we save the imbuement into his memory, obviously"
 
 		@_process = opts
 
-		unless @incantation
-			console.error "you need a incantation for your process!"
-			throw new Error "you need a incantation for your process!"
+		unless @inception
+			console.error "you need a inception for your process!"
+			throw new Error "you need a inception for your process!"
 
-		unless @encantador
-			console.error "you need a encantador for your process!"
-			throw new Error "you need a encantador for your process!"
+		unless @implementation
+			console.error "you need a implementation for your process!"
+			throw new Error "you need a implementation for your process!"
 
-		# if typeof (XpDB = narrator.library[@incantation]) is \undefined
-		# 	XpDB = narrator.library[@incantation] = new ExperienceDB @incantation
-
-		# @XpDB = XpDB
-
-		# if typeof @version is \object
-		# 	_version = @version
-		# 	version = @version.version
-		# 	debugger
-		# 	console.log "ALL WRONG"
 		if not @version or @version is \*
 			@version = \latest
 
-		super "Process(#{@fqvn = @encantador+':'+@incantation+'@'+@version})"
-		# if bp = Process._[long_incantation] and typeof DEBUG isnt \undefined
-		# 	return bp
+		super "Process(#{@fqvn = @implementation+':'+@inception+'@'+@version})"
 
 	imbue: (narrator) ->
-		assert narrator instanceof StoryBook
+		assert narrator instanceof Narrator
 		# debugger
 		if @state is \ready
 			console.log "we're gonna make a new imbuement here..."
 			var process_inst
-			library = @refs.library #.poetry
-			_eth = @
 			_deps = @_deps
 			_process = @_process
-			# if typeof narrator.library.memory[@incantation] is \undefined
-			# 	narrator.library.memory[@incantation] = new ExperienceDB @incantation
-			# I'm not terribly happy with this... I really want to sort out the library and the databases...
-			# for now though, this is good enough
-			if typeof narrator.memory[@incantation] is \undefined
-				narrator.memory[@incantation] = new ExperienceDB @incantation
+			if typeof narrator.memory[@inception] is \undefined
+				narrator.memory[@inception] = new ExperienceDB @inception
 			#OPTIMIZE: this could be potentially costly to call ToolShed.extend ... I dunno...
 			#OPTIMIZE: perhaps instead of eval, we should use new Function
-			if typeof narrator.poetry[@encantador] is \undefined
+			if typeof narrator.poetry[@implementation] is \undefined
 				eval """
 				(function(){
-					var #{@encantador} = process_inst = (function(superclass){
-						var prototype = extend$((import$(#{@encantador}, superclass).displayName = '#{@encantador}', #{@encantador}), superclass).prototype, constructor = #{@encantador};
-						function #{@encantador} (narrator, _eth, key, opts) {
-							if(!(this instanceof #{@encantador})) return new #{@encantador}(key, opts);
+					var #{@implementation} = process_inst = (function(superclass){
+						var prototype = extend$((import$(#{@implementation}, superclass).displayName = '#{@implementation}', #{@implementation}), superclass).prototype, constructor = #{@implementation};
+						function #{@implementation} (narrator, _eth, key, opts) {
+							if(!(this instanceof #{@implementation})) return new #{@implementation}(key, opts);
 							//#{if @type is \Cardinal then 'ToolShed.extend(this, DefineTone);' else ''}
 							//#{if @type is \Mutable then 'ToolShed.extend(this, DefineTiming);' else ''}
 							//#{if @type is \Fixed then 'ToolShed.extend(this, DefineSymbolic);' else ''}
-							#{@encantador}.superclass.call(this, narrator, _eth, key, opts);
+							#{@implementation}.superclass.call(this, narrator, _eth, key, opts);
 						}
 						ToolShed.extend(prototype, _process.machina);
-						return #{@encantador};
-					}(Motivation));
-					ToolShed.extend(#{@encantador}, Magnetism);
-					narrator.poetry['#{@encantador}'] = #{@encantador};
+						return #{@implementation};
+					}(Motivator));
+					ToolShed.extend(#{@implementation}, Magnetism);
+					narrator.poetry['#{@implementation}'] = #{@implementation};
 				}())
 				"""
 
-			if @encantador isnt @incantation
+			if @implementation isnt @inception
 				eval """
 				(function(){
-					var #{@incantation} = process_inst = (function(superclass){
-						var embodies = _deps.embodies, prototype = extend$((import$(#{@encantador}, superclass).displayName = '#{@encantador}', #{@encantador}), superclass).prototype, constructor = #{@encantador};
-						function #{@encantador} (key, opts) {
-							if(!(this instanceof #{@encantador})) return new #{@encantador}(key, opts);
+					var #{@inception} = process_inst = (function(superclass){
+						var embodies = _deps.embodies, prototype = extend$((import$(#{@implementation}, superclass).displayName = '#{@implementation}', #{@implementation}), superclass).prototype, constructor = #{@implementation};
+						function #{@implementation} (key, opts) {
+							if(!(this instanceof #{@implementation})) return new #{@implementation}(key, opts);
 							#{if @type is \Cardinal then 'ToolShed.extend(this, Tone);' else ''}
 							#{if @type is \Mutable then 'ToolShed.extend(this, Timing);' else ''}
 							#{if @type is \Fixed then 'ToolShed.extend(this, Symbolic);' else ''}
-							#{@encantador}.superclass.call(this, narrator, _eth, key, opts);
+							#{@implementation}.superclass.call(this, narrator, _eth, key, opts);
 						}
 						/*
 						if(embodies) {
 							for(var i in _deps.embodies) {
-								ToolShed.extend(prototype, narrator.poetry['#{@encantador}'].prototype);
+								ToolShed.extend(prototype, narrator.poetry['#{@implementation}'].prototype);
 							}
 						}
 						*/
 						ToolShed.extend(prototype, _process.machina);
-						return #{@encantador};
-					}(narrator.poetry['#{@encantador}']));
-					narrator.poetry['#{@encantador}']['#{@incantation}'] = #{@incantation};
-					narrator.poetry['#{@encantador}']['#{@incantation}@#{@version}'] = #{@incantation};
+						return #{@implementation};
+					}(narrator.poetry['#{@implementation}']));
+					narrator.poetry['#{@implementation}']['#{@inception}'] = #{@inception};
+					narrator.poetry['#{@implementation}']['#{@inception}@#{@version}'] = #{@inception};
 				}())
 				"""
 			# else
 				# debugger
-
-
-			# console.log "going to extend element", element, "with", @_process.machina
-			# debugger if @incantation is \Mun
-			# lala = ToolShed.extend element::, @_process.machina
-
-			# console.log "before funkify:", lala
-			# debugger if @incantation is \Mun
-			# lala = ToolShed.da_funk lala, {lala:1234}, name: @fqvn
-			# console.log "after funkify:", lala
-			# debugger if @incantation is \Mun
-			# debugger
-
-			### return @refs.narrator._[@encantador][@version][id] = lala
-		# lala = @refs.narrator._[@encantador][@version][id] = new process_inst @, key # {lala:1234}
-			# debugger
 
 			return process_inst
 		else
 			@debug.error "you can't imbue a process that's not yet ready!: #{@fqvn}"
 			# throw new Error "you can't imbue a process that's not yet ready!"
 			# perrhaps in the future, we should use a yield and get rid of a bunch of these errors...
-		# return @refs.library.processes[@encantador][@version][id] = lala
-		# return UniVerse._[@encantador][version][id] = lala
 
 	states:
 		uninitialized:
@@ -834,7 +781,7 @@ class Process extends Fsm
 						console.log "wtf mate? the process doesnt exist"
 						return
 					@type = if bp.type then bp.type else
-						switch bp.encantador
+						switch bp.implementation
 						| \Poem \Word => \Fixed
 						| \Verse => \Mutable
 						| \Voice => \Cardinal
@@ -842,7 +789,7 @@ class Process extends Fsm
 					@layout = bp.layout || {}
 					@_deps = {}
 					deps = ToolShed.embody {}, bp.poetry
-					long_incantation = @fqvn
+					long_inception = @fqvn
 					embodies = bp.embodies
 					if typeof embodies is \string
 						embodies = [embodies]
@@ -851,50 +798,42 @@ class Process extends Fsm
 					unless narrator = @refs.narrator
 						debugger
 					task = @task "get deps for #{@fqvn}"
-
-					# console.warn @fqvn, "DEPS: ", deps, @refs.library.processes
-					if @encantador isnt @incantation
-						task.push "getting encantador: #{@encantador}" (done) ->
-							encantador = incantation = @encantador
+					if @inception isnt @implementation
+						task.push "getting implementation: #{@implementation}" (done) ->
+							implementation = inception = @implementation
 							version = \latest
-							if ~(idx = incantation.indexOf '@')
-								version = incantation.substr idx+1
-								encantador = incantation = incantation.substr 0, idx
+							if ~(idx = inception.indexOf '@')
+								version = inception.substr idx+1
+								implementation = inception = inception.substr 0, idx
 							# debugger
-							UniVerse.library.exec \fetch {encantador, incantation, version}, @refs.narrator, (err, bp) ~>
-								@debug "fetched... %s:%s", encantador, incantation
 								# debugger
-								@_deps.encantador = bp
+								@_deps.implementation = bp
 								bp.once_initialized ~> done!
 
 					# @debug.todo "add the ability for embodies to be abstract in some way"
 					if embodies
-						_.each embodies, (incantation, ii) ->
-							console.log "embodies", embodies, incantation
-							task.push "getting embodied: #{incantation}" (done) ->
-								unless incantation
+						_.each embodies, (inception, ii) ->
+							console.log "embodies", embodies, inception
+							task.push "getting embodied: #{inception}" (done) ->
+								unless inception
 									debugger
-								encantador = @encantador
+								implementation = @implementation
 								version = \latest
 								# console.log "embodies", embodies, typeof embodies
-								if ~(idx = incantation.indexOf '@')
-									version = incantation.substr idx+1
-									incantation := incantation.substr 0, idx
-								UniVerse.library.exec \fetch {encantador, incantation, version}, @refs.narrator, (err, bp) ~>
-									@_deps.embodies[ii] = bp
+								if ~(idx = inception.indexOf '@')
+									version = inception.substr idx+1
+									inception := inception.substr 0, idx
 									bp.once_initialized ~> done!
 
-					_.each deps, (deps, encantador) ~>
-						_.each deps, (version, incantation) ~>
-							task.push "getting element: #{encantador}:#{incantation}@#{version}" (done) ->
-								# if typeof narrator.poetry[encantador] is \undefined
-								# 	narrator.poetry[encantador] = {}
+					_.each deps, (deps, implementation) ~>
+						_.each deps, (version, inception) ~>
+							task.push "getting element: #{implementation}:#{inception}@#{version}" (done) ->
+								# if typeof narrator.poetry[implementation] is \undefined
+								# 	narrator.poetry[implementation] = {}
 								# debugger
-								# if bp = narrator.poetry[encantador][incantation]
+								# if bp = narrator.poetry[implementation][inception]
 								# 	done!
 								# else
-								UniVerse.library.exec \fetch {encantador, incantation, version}, @refs.narrator, (err, bp) ~>
-									@_deps[bp.fqvn] = bp
 									# bp.once_initialized ~> done!
 									done!
 								# remove me because it should just go into new bp mode... (things should never fail)
@@ -913,12 +852,12 @@ class Process extends Fsm
 
 					# console.log "task:", task.fns, task.done, task
 					task.end (err, res) ->
-						console.log "done: #long_incantation"
+						console.log "done: #long_inception"
 						console.info "initialized process", @fqvn
 						# debugger
 						@transitionSoon \ready
 				req = Http.get {
-					path: "/db/_eth/#{@encantador}/#{@incantation}#{if @version and @version isnt \latest => '&version=' + @version else ''}"
+					path: "/db/_eth/#{@implementation}/#{@inception}#{if @version and @version isnt \latest => '&version=' + @version else ''}"
 				}, (res) !~>
 					console.log "we are requesting...."
 					data = ''
@@ -936,19 +875,16 @@ class Process extends Fsm
 							@_process = ToolShed.objectify data, {require: @refs.narrator.refs.require}, {name: @namespace}
 							if @version is \latest
 								@version = @_process.version
-								@fqvn = @encantador+':'+@incantation+'@'+@version
-								@refs.library.processes[@fqvn] = @
-							# debugger
-							if typeof @refs.narrator._[@encantador] isnt \object
-								@refs.narrator._[@encantador] = {}
-							if typeof @refs.narrator._[@encantador][@version] isnt \object
-								@refs.narrator._[@encantador][@version] = {}
+								@fqvn = @implementation+':'+@inception+'@'+@version
+								@refs.narrator._[@implementation] = {}
+							if typeof @refs.narrator._[@implementation][@version] isnt \object
+								@refs.narrator._[@implementation][@version] = {}
 							process_eth!
 						else
 							@transition \error
 
 				# machina = @
-				# get_eth encantador, incantation, version, (err, res) ->
+				# get_eth implementation, inception, version, (err, res) ->
 					# if err
 					# 	@emit \error, err
 					# 	@transition \error
@@ -961,7 +897,7 @@ class Process extends Fsm
 
 		ready:
 			onenter: ->
-				console.log "process ready", @incantation
+				console.log "process ready", @inception
 				@emit \ready
 
 			verify: (path, val) ->
@@ -969,9 +905,9 @@ class Process extends Fsm
 				#unless s = process[path]
 		error:
 			onenter: ->
-				console.error "you have tried to load a process which wasn't able to be fetched", @incantation
+				console.error "you have tried to load a process which wasn't able to be fetched", @inception
 
-# motivation: \Service
+# implementation: \Service
 # inception: \Http
 # possesses:
 # 	* \Desire
@@ -979,10 +915,10 @@ class Process extends Fsm
 # 	* \Agreement
 # Creativity -> Origin
 # Inception
-# Motivation
+# Motivator
 # Timing -> Progress
 # export Desire
 # Tone -> Agreement
 # export Agreement
-export Motivation
+export Motivator
 export Process
