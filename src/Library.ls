@@ -3,9 +3,13 @@ Http = require \http
 assert = require \assert
 
 { Fsm, ToolShed, _ } = require 'MachineShop'
-# UniVerse = require './UniVerse' .UniVerse
-Blueprint = require './Blueprint' .Blueprint
+
+
+LocalDB = require './LocalDB' .LocalDB
 StoryBook = require './StoryBook' .StoryBook
+Narrator = require './Narrator' .Narrator
+Blueprint = require './Blueprint' .Blueprint
+Process = require './Process' .Process
 
 
 # library gets the blueprint from the storage then saves it into the poetry book
@@ -19,6 +23,7 @@ class Library extends Fsm
 			throw new Error "you need a reference to your PublicDB blueprints [storage]"
 
 		@blueprints = {}
+		@ether = {}
 		@__loading = {}
 		@memory = {}
 		@archive = refs.archive
@@ -33,39 +38,6 @@ class Library extends Fsm
 
 		ready:
 			onenter: ->
-
-			'get:exp': (incantation, key, cb) ->
-				# I believe this will probably do a series of things when looking for an experience
-				# LocalDB / PublicDB / EtherDB
-
-				@__loading = req = Http.get {path: "/db/#{incantation}/#{key}"}, (res) !~>
-					@__loading = null
-					data = ''
-					res.on \error (err) ->
-						console.error "we've got an error!!", err
-
-					res.on \data (buf) ->
-						# console.log "got data", data
-						data += buf
-
-					res.on \end ~>
-						console.log "done with the request:", res
-						@_loading = null
-						if res.statusCode is 200
-							xp = ToolShed.objectify data, {}, {name: @id} #ToolShed.da_funk res, {}, {name: @id}
-							@debug "yay, we have the experience... store it"
-							@memory[incantation].set xp
-							# console.error "YAYAYAYA", @_el, @state
-
-						else
-							# @transition \error
-							@emit \error, {code: \ENOENT}
-							@transition res.statusCode
-					# debugger
-				# req.setHeader 'Content-Type', "application/json"
-				@_loading = id
-				if typeof cb is \function
-					cb null, {yay: true}
 
 			fetch: (fqvn, book, cb) ->
 				if typeof book is \function

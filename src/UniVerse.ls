@@ -6,8 +6,6 @@ Path = require \path
 _ = require \lodash
 Rimraf = require \rimraf
 Walk = require \walkdir
-Debug = require \debug
-debug = Debug 'UniVerse'
 
 Semver = require \semver
 Ini = require \ini
@@ -26,7 +24,8 @@ sh = require \shelljs
 if typeof process is \object
 	process.env.MACHINA = 1234
 
-{ ToolShed, Fsm, Fabuloso, Machina } = require \MachineShop
+{ ToolShed, Fsm, Fabuloso, Machina, Debug } = require \MachineShop
+debug = Debug 'UniVerse'
 
 { PublicDB, LocalDB, Blueprint } = require './PublicDB'
 EtherDB = require './EtherDB' .EtherDB
@@ -138,6 +137,12 @@ class UniVerse extends Fsm
 	states:
 		uninitialized:
 			onenter: ->
+				@refs.architect = @architect = new Architect @refs, name: "42"
+				@refs.library = @library = new Library @refs, name: \sencillo
+
+				# this is a pretty interesting concept that an instantiation is extending another instantiation.
+				# we could arrange these like puzzle pieces and create really dynamic machines
+				ToolShed.extend @refs.machina, @architect
 				console.log "initializing..."
 				console.log "TODO: install procstreams"
 				if @id
@@ -151,14 +156,11 @@ class UniVerse extends Fsm
 
 			'node:onenter': ->
 				console.log "NODE UNIVERSE"
-				# this is a pretty interesting concept that an instantiation is extending another instantiation.
-				# we could arrange these like puzzle pieces and create really dynamic machines
-				ToolShed.extend @refs.machina, @architect = new Architect @refs, name: "42"
-				@refs.akasha = @akasha = new EtherDB name: \MultiVerse
+				# @refs.akasha = @akasha = new EtherDB @refs, name: \MultiVerse
+				@refs.akasha = @akasha = new EtherDB @refs, name: \UniVerse
 
 			'browser:onenter': ->
 				@refs.archive = @archive = new PublicDB name: \UniVerse
-				@refs.library = @library = new Library @refs, name: \sencillo # host: ...
 
 		install_deps:
 			onenter: ->

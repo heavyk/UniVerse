@@ -3,7 +3,7 @@
 # symlink to poems here:
 # share/arangodb/js/apps/system
 
-facilmente:
+sencillo:
 	name: "sencillo"
 	version: "0.1.0"
 	description: "fácilmente!!"
@@ -28,6 +28,7 @@ facilmente:
 		"node-gyp": "*"
 		"tar": "*"
 		"request": "*"
+	blueprint: 'src/UniVerse.blueprint'
 	repos:
 		"lib/node_modules/Laboratory":
 			upstream: "github://heavyk/Laboratory"

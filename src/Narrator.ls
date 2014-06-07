@@ -42,6 +42,13 @@ class Narrator extends Fsm
 		super "Narrator"
 		if typeof id is \string
 			@debug.todo "load up a narrator from the database of a defined id (figurehead)"
+			implementation = id
+			version = \latest
+			if ~(i = id.indexOf '@')
+				version = id.substr i+1
+				implementation = id.substr 0, i
+
+			@exec \open
 
 	initialize: ->
 		console.log "narrator initialize!!!!!!"
@@ -60,7 +67,7 @@ class Narrator extends Fsm
 				# @transition \ready
 
 	cmds:
-		open: (name, version, path, cb) ->
+		start: (name, version, cb) ->
 			console.log "if the poem is not downloaded, download it", &
 			console.log "once the poem is downloaded and loaded, switch to it"
 			if typeof name isnt \string
@@ -80,8 +87,8 @@ class Narrator extends Fsm
 			# debugger
 			# uV.archive.exec \fetch "Poem/#name", (err, bp) ->
 
-			uV.machina.exec \fetch {
-				inception: "StoryBook"
+			uV.akasha.exec \fetch {
+				inception: "Poem"
 				implementation: name
 				version: version
 				narrator: @
@@ -105,9 +112,7 @@ class Narrator extends Fsm
 					@poems.push poem
 					@poem_fqvns.push fqvn
 					# transition the storynarrator to the poem in use
-					@transition name+'@'+version
-					# debugger
-					poem.transition @path
+
 					@debug.todo "load up the path into the poem"
 					# debugger
 					# done!
