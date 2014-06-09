@@ -28,13 +28,14 @@ machina:
 		* \vm
 		* \zlib
 	states:
-		unitialized:
+		uninitialized:
 			onenter: ->
 				@debug.todo "check to see if node exists and is compiled"
 				@transition \ready
+
 		ready:
-			onenter: ->
-				console.log "node ready"
+			# onenter: ->
+			# 	console.log "node ready"
 
 			resolve: (module, cb) ->
 				try

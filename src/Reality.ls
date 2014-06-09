@@ -20,7 +20,7 @@ LSAst = require \livescript/lib/ast
 
 class Reality extends Fsm
 	embody: (concept) ->
-		# console.log "embody", concept
+		console.log "embody", concept
 		DaFunk.extend this, Reality.modifiers[concept]
 
 		# add: (more) ->
@@ -51,25 +51,27 @@ class Reality extends Fsm
 			@_initialState = @initialState
 		@initialState = false
 
-		if typeof (modifier = @embodies) is \string
+		@_deps = []
+		if @_impl and typeof (modifier = @_impl.embodies) is \string
 			@embody modifier
 		else if Array.isArray modifier
 			_.each modifier, @embody, this
 
 		# TODO: super impl.name, impl.id, opts
 		super impl.name, impl.id, opts
+		@_dep_done!
 
 	_dep_done: (dep) ->
-		if ~(i = @_deps.indexOf(dep))
+		if dep and ~(i = @_deps.indexOf(dep))
 			@_deps.splice i, 1
-			if @_deps.length is 0
-				@transitionSoon @initialState = @_initialState || \uninitialized
 		else
 			@debug.warn "you claim dep '#dep' is done. however it was never even started"
 
+		if @_deps.length is 0 and @initialState is false
+			@transitionSoon @initialState = @_initialState || \uninitialized
+
 	initialize: ->
 		self = this
-		@_deps = []
 		if locals = @_impl.local
 			# deps = @_deps ++ Object.keys locals
 			for where, uri of locals
@@ -78,6 +80,7 @@ class Reality extends Fsm
 					if err => @debug.error ''+err.stack
 					ToolShed.set_obj_path where, self, res
 					@_dep_done uri
+
 
 
 	eventListeners:
@@ -121,16 +124,20 @@ class Reality extends Fsm
 Reality.modifiers =
 	Idea:
 		'and|initialize': ->
-			if typeof @concepts isnt \object
-				@concepts = {}
-			if concepts = @_impl.concepts
-				_.each concepts, (concept, uri) ->
+			console.log "initialize concepts!!!"
+			if concepts = @_impl.concept
+				if typeof @concept isnt \object
+					@concept = {}
+				console.log "concepts", concepts
+				_.each concepts, (concept, uri) ~>
 					console.log "concept:", concept, uri
 					for where, uri of concepts
 						@_deps.push uri
 						@refs.library.exec \get uri, (err, res) ~>
 							if err => @debug.error ''+err.stack
-							ToolShed.set_obj_path where, self, res
+							console.log "where:", where, res
+							@concept[where] = res
+							# ToolShed.set_obj_path where, @concept, res
 							@_dep_done uri
 					# impl = new Implementation path: "src/Laboratory.concept.ls" outfile: "library/Laboratory.concept.js"
 					# impl.on \ready ->
@@ -143,7 +150,6 @@ Reality.modifiers =
 
 		eventListeners:
 			'*': (evt, arg1, arg2, arg3) ->
-				console.log "*:", evt
 				if evt.indexOf('add:concept:') is 0
 					more = evt.substr('add:concept:'.length)
 					if word = ToolShed.get_obj_path more, @concepts

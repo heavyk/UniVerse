@@ -109,7 +109,7 @@ class Architect extends Fsm
 			onenter: ->
 				console.log "TheArchitect is ready!"
 
-class UniVerse extends Fsm
+class UniVerse extends Fsm # Verse
 	(id, opts) ->
 		refs = uV: @
 		refs.machina = @machina = new Machina refs, name: \TheArchitect

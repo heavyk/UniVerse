@@ -15,7 +15,6 @@ type: \Abstract
 description: "the origin of Reality"
 concept:
 	Technician:				\concept://Technician
-	Project:					\concept://Project
 	Library:					\concept://Library
 local:
 	Fs:								\node://fs
@@ -39,4 +38,4 @@ embodies:
 	* \Interactivity
 
 machina:
-	brand: "UniVerse" # (E) -> @name "Affinaty"
+	brand: (E) -> @name "UniVerse"

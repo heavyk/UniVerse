@@ -42,6 +42,7 @@ machina:
 				if not def = @CONFIG[id]
 					throw new Error "universe '#id' doesn't exist"
 
+				console.log "UniVerse:", @concept.UniVerse
 				try
 					cb null, uV = new @concept.UniVerse @refs, def
 				catch e
