@@ -62,10 +62,11 @@ class Reality extends Fsm
 		@_dep_done!
 
 	_dep_done: (dep) ->
-		if dep and ~(i = @_deps.indexOf(dep))
-			@_deps.splice i, 1
-		else
-			@debug.warn "you claim dep '#dep' is done. however it was never even started"
+		if dep
+			if ~(i = @_deps.indexOf(dep))
+				v = @_deps.splice i, 1
+			else
+				@debug.warn "you claim dep '#dep' is done. however it was never even started"
 
 		if @_deps.length is 0 and @initialState is false
 			@transitionSoon @initialState = @_initialState || \uninitialized
@@ -73,13 +74,16 @@ class Reality extends Fsm
 	initialize: ->
 		self = this
 		if locals = @_impl.local
-			# deps = @_deps ++ Object.keys locals
-			for where, uri of locals
+			# for where, uri of locals
+			_.each locals, (uri, where) ~>
 				@_deps.push uri
 				@refs.library.exec \get uri, (err, res) ~>
-					if err => @debug.error ''+err.stack
-					ToolShed.set_obj_path where, self, res
-					@_dep_done uri
+
+					if err
+						@debug.error ''+err.stack
+					else
+						ToolShed.set_obj_path where, self, res
+						@_dep_done uri
 
 
 
@@ -124,26 +128,17 @@ class Reality extends Fsm
 Reality.modifiers =
 	Idea:
 		'and|initialize': ->
-			console.log "initialize concepts!!!"
 			if concepts = @_impl.concept
 				if typeof @concept isnt \object
 					@concept = {}
-				console.log "concepts", concepts
 				_.each concepts, (concept, uri) ~>
-					console.log "concept:", concept, uri
 					for where, uri of concepts
 						@_deps.push uri
 						@refs.library.exec \get uri, (err, res) ~>
 							if err => @debug.error ''+err.stack
-							console.log "where:", where, res
 							@concept[where] = res
 							# ToolShed.set_obj_path where, @concept, res
 							@_dep_done uri
-					# impl = new Implementation path: "src/Laboratory.concept.ls" outfile: "library/Laboratory.concept.js"
-					# impl.on \ready ->
-					# 	@_concepts[concept] = impl.imbue Reality
-					# 	lab = new Laboratory { library }, technician: \volcrum
-					# ToolShed.set_obj_path concept, new Idea @refs, uri
 			else
 				@concepts = {}
 

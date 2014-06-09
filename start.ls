@@ -60,11 +60,11 @@ add_dir_growl = (dir) ->
 	dir.on \new:Src (src) ->
 		add_growl src
 
-add_growl \
-	impl = new Implementation path: "origin/Laboratory.concept.ls" outfile: "library/Laboratory.concept.js"
-impl.on \ready ->
-	Laboratory = impl.imbue Reality
-	lab = new Laboratory { library }, technician: \volcrum
+# add_growl \
+# 	impl = new Implementation path: "origin/Laboratory.concept.ls" outfile: "library/Laboratory.concept.js"
+# impl.on \ready ->
+# 	Laboratory = impl.imbue Reality
+# 	lab = new Laboratory { library }, technician: \volcrum
 
 	# lab.on \new:Project (prj) ->
 	# 	add_growl prj
@@ -77,5 +77,5 @@ impl.on \ready ->
 	MultiVerse = impl.imbue Reality
 	multiverse = new MultiVerse { library }
 	multiverse.exec \load \sencillo, (err, uV) ->
-		console.log "loaded sencillo...", err, uV
+		console.log "loaded sencillo..."
 
