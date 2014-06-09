@@ -33,6 +33,7 @@ multiverse.on \ready (config) ->
 # Library = new Implementation "src/Library.concept.ls"
 
 library = new LocalLibrary {multiverse},
+	protos: __dirname + '/protos'
 	path: __dirname + '/library'
 
 

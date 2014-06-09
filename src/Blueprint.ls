@@ -478,6 +478,7 @@ class Proto extends Fsm
 
 		super "Proto(#id)", opts
 
+concepts = {}
 
 default_protos = {
 	node: (module, cb) ->
@@ -487,10 +488,12 @@ default_protos = {
 			cb e
 	npm: (module, cb) ->
 		try
+			# TODO: new Module ...
+			# this will allow for the module to be downloaded if it doesn't already exist
+			# TODO: each proto has its own path parser... add version support
 			if ~(i = module.indexOf '.')
 				path = module.substr i+1
 				mod = module.substr 0, i
-				console.log "require",  mod, path
 				mod = require mod
 				mod = ToolShed.get_obj_path path, mod
 			else
@@ -498,9 +501,18 @@ default_protos = {
 			cb null, mod
 		catch
 			cb e
+	# concept: (path, cb) ->
+	# 	console.log "fetching concept:", path
+		# impl = new Implementation path: "src/Laboratory.concept.ls" outfile: "library/Laboratory.concept.js"
+		# impl.on \ready ->
+		# 	@_concepts[concept] = impl.imbue Reality
+		# 	lab = new Laboratory { library }, technician: \volcrum
 	# proto: (proto, cb) ->
 	# 	cb null, protos[proto]
 }
+
+{ Implementation } = require './Implementation'
+{ Reality } = require './Reality'
 
 class LocalLibrary extends Fsm
 	(@refs, opts) ->
@@ -511,18 +523,32 @@ class LocalLibrary extends Fsm
 			throw new Error "you need to define 'path' for it to work"
 
 		console.log "LocalLibrary: path: #path", @abs_path = Path.resolve path
-		@protos = {}
 		@index = {}
 		cwd = process.cwd!
 		@path = Path.relative(cwd, @abs_path = Path.resolve path)
+		if opts.protos
+			@protos = {}
+			@rel_protos = Path.relative(cwd, @abs_protos = Path.resolve opts.protos)
+
 
 		super "LocalLibrary(#{@path})"
 
 	states:
 		uninitialized:
 			onenter: ->
-				# @exec \update
-
+				library = this
+				walker = Walk @abs_protos, depth: 1
+				walker.on \file (path) ~>
+					console.log "proto implementation", path
+					parts = Path.basename path .split '.'
+					if parts.length is 3
+						impl = new Implementation path: path #, outfile: "library/Laboratory.concept.js"
+						impl.on \ready ~>
+							Proto = impl.imbue Reality
+							@protos[parts.0] = new Proto { library }
+				walker.on \end ~>
+					console.log "DONE!"
+					@transition \ready
 
 	cmds:
 		get: (uri, cb) ->
@@ -530,7 +556,7 @@ class LocalLibrary extends Fsm
 				proto = uri.substr 0, i
 				path = uri.substr i+3
 			if handler = @protos[proto]
-				handler path, cb
+				handler.exec \resolve, path, cb
 			else if handler = default_protos[proto]
 				handler path, cb
 			else
@@ -559,8 +585,14 @@ class LocalLibrary extends Fsm
 				if parts.length > 2
 					compiler = parts.pop!
 					proto = parts.pop!
-				# if proto is \proto
-				# 	@protos[proto] = new
+
+				if parts.length is 3
+					implementation = parts.pop!
+					if proto is \proto
+						impl = new Implementation path: "#{@src}/Laboratory.concept.ls" outfile: "library/Laboratory.concept.js"
+						impl.on \ready ->
+							Proto = impl.imbue Reality
+							@protos[proto] = new Proto { library }
 
 		'lib:update': ->
 			console.log "walk lib:", @lib

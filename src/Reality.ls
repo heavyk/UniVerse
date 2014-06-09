@@ -59,31 +59,25 @@ class Reality extends Fsm
 		# TODO: super impl.name, impl.id, opts
 		super impl.name, impl.id, opts
 
+	_dep_done: (dep) ->
+		if ~(i = @_deps.indexOf(dep))
+			@_deps.splice i, 1
+			if @_deps.length is 0
+				@transitionSoon @initialState = @_initialState || \uninitialized
+		else
+			@debug.warn "you claim dep '#dep' is done. however it was never even started"
+
 	initialize: ->
 		self = this
+		@_deps = []
 		if locals = @_impl.local
-			deps = Object.keys locals
+			# deps = @_deps ++ Object.keys locals
 			for where, uri of locals
+				@_deps.push uri
 				@refs.library.exec \get uri, (err, res) ~>
 					if err => @debug.error ''+err.stack
 					ToolShed.set_obj_path where, self, res
-					deps.splice deps.indexOf(where), 1
-					if deps.length is 0
-						self.transitionSoon @initialState = @_initialState || \uninitialized
-
-		# if modifier = @improves
-		# 	_.each modifier, (mod) ->
-		# 		console.log "modifier", mod
-		# 		the_concept = ToolShed.get_obj_path modifier, Concept.definitions
-		# 		DaFunk.extend self, the_concept
-
-		# if concept = @concepts
-		# 	_.each concept (uri, where) ->
-		# 		if ~(i = uri.indexOf '://')
-		# 			proto = uri.substr 0, i
-		# 			path = uri.substr i+3
-		# 			@emit "load:#proto", path, "concepts.#where", @
-		#TODO: poetry
+					@_dep_done uri
 
 
 	eventListeners:
@@ -127,11 +121,17 @@ class Reality extends Fsm
 Reality.modifiers =
 	Idea:
 		'and|initialize': ->
-			if typeof @_concepts isnt \object
-				@_concepts = {}
+			if typeof @concepts isnt \object
+				@concepts = {}
 			if concepts = @_impl.concepts
 				_.each concepts, (concept, uri) ->
 					console.log "concept:", concept, uri
+					for where, uri of concepts
+						@_deps.push uri
+						@refs.library.exec \get uri, (err, res) ~>
+							if err => @debug.error ''+err.stack
+							ToolShed.set_obj_path where, self, res
+							@_dep_done uri
 					# impl = new Implementation path: "src/Laboratory.concept.ls" outfile: "library/Laboratory.concept.js"
 					# impl.on \ready ->
 					# 	@_concepts[concept] = impl.imbue Reality

@@ -2,10 +2,10 @@ idea: \Laboratory
 name: \Laboratory
 version: \0.1.1
 description: "Volcrum's Lare"
-concepts:
-	Technician:				\implementation://Technician
-	Project:					\implementation://Project
-	Library:					\implementation://Library
+concept:
+	Technician:				\concept://Technician
+	Project:					\concept://Project
+	Library:					\concept://Library
 local:
 	Fs:								\node://fs
 	Path:							\node://path
