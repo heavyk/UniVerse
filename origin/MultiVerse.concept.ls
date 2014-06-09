@@ -1,40 +1,20 @@
-
-# charting / graph library
-# http://dc-js.github.io/dc.js/
-
-# credit card form
-# http://jessepollak.github.io/card/
-
-# split the ssl into a subsystem
-# https://github.com/gozdal/accessl/
-
-
 idea: \MultiVerse
 version: \0.1.0
 type: \Abstract
-description: "choose your origin"
+description: "the origin of the UniVerse"
 concept:
 	UniVerse:					\concept://UniVerse
 local:
-	# Fs:								\node://fs
-	# Path:							\node://path
-	# Walk:							\npm://walkdir
 	ToolShed:					\npm://MachineShop.ToolShed
 	Config:						\npm://MachineShop.Config
-# poetry:
-# 	Word:
-# 		Technician:			\latest
-# 		Project:				\latest
 embodies:
 	* \Idea
-	# * \Form
-	# * \Creativity
 	* \Verse
 	* \Interactivity
 
 machina:
 	initialize: ->
-		@debug.notify "Loading MultiVerse..."
+		@debug "Loading MultiVerse..."
 		unless @config
 			@config = 'multiverse.json'
 		@debug "done initialize"
@@ -45,24 +25,17 @@ machina:
 		uninitialized:
 			onenter: ->
 				@ToolShed.searchDownwardFor @config, ((@config_path) || process.cwd!), (err, path) ~>
-					# assert this instanceof Laboratory
 					if err
 						@transition \setup
 					else
 						cfg = @Config path
-						# return
 						cfg.on \ready ~>
-							# assert 	@ instanceof Laboratory
 							@CONFIG = cfg
 							@transition \ready
-							# if path = cfg.path
-							# 	@exec \set:path path
-							# else
-							# 	@exec \prompt:path
 
 		ready:
 			onenter: ->
-				@debug.notify "MultiVerse ready..."
+				@debug "MultiVerse ready..."
 				@emit \ready
 
 			load: (id, cb) ->

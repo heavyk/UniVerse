@@ -12,7 +12,7 @@
 idea: \UniVerse
 version: \0.1.0
 type: \Abstract
-description: "the origin of everything"
+description: "the origin of Reality"
 concept:
 	Technician:				\concept://Technician
 	Project:					\concept://Project

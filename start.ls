@@ -24,11 +24,11 @@ multiverse = require './multiverse'
 # db = new EtherDB
 # db.exec \fetch \UniVerse@latest
 
-multiverse = Config 'multiverse.json'
-multiverse.on \ready (config) ->
-	# console.log "multiverse", config
-	console.log "multiverse ready"
-	console.log "STEP 1. load the local library"
+# multiverse = Config 'multiverse.json'
+# multiverse.on \ready (config) ->
+# 	# console.log "multiverse", config
+# 	console.log "multiverse ready"
+# 	console.log "STEP 1. load the local library"
 
 # Library = new Implementation "src/Library.concept.ls"
 
@@ -60,7 +60,7 @@ add_dir_growl = (dir) ->
 		add_growl src
 
 add_growl \
-	impl = new Implementation path: "src/Laboratory.concept.ls" outfile: "library/Laboratory.concept.js"
+	impl = new Implementation path: "origin/Laboratory.concept.ls" outfile: "library/Laboratory.concept.js"
 impl.on \ready ->
 	Laboratory = impl.imbue Reality
 	lab = new Laboratory { library }, technician: \volcrum
@@ -71,9 +71,10 @@ impl.on \ready ->
 	# 		add_dir_growl dir
 
 add_growl \
-	impl = new Implementation path: "src/MultiVerse.concept.ls" outfile: "library/MultiVerse.concept.js"
+	impl = new Implementation path: "origin/MultiVerse.concept.ls" outfile: "library/MultiVerse.concept.js"
 impl.on \ready ->
 	MultiVerse = impl.imbue Reality
 	multiverse = new MultiVerse { library }
-	multiverse.exec \load \sencillo
+	multiverse.exec \load \sencillo, (err, uV) ->
+		console.log "loaded sencillo...", err, uV
 
