@@ -10,6 +10,7 @@ growl_enabled = false
 { Blueprint, LocalLibrary } = require './src/Blueprint'
 { Implementation } = require './src/Implementation'
 { Reality } = require './src/Reality'
+{ LocalLibrary } = require './src/LocalLibrary'
 # { Laboratory } = require './src/Laboratory'
 # { LocalDB } = require './src/LocalDB'
 
