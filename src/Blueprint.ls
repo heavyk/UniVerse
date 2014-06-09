@@ -487,7 +487,15 @@ default_protos = {
 			cb e
 	npm: (module, cb) ->
 		try
-			cb null, require module
+			if ~(i = module.indexOf '.')
+				path = module.substr i+1
+				mod = module.substr 0, i
+				console.log "require",  mod, path
+				mod = require mod
+				mod = ToolShed.get_obj_path path, mod
+			else
+				mod = require module
+			cb null, mod
 		catch
 			cb e
 	# proto: (proto, cb) ->
@@ -527,8 +535,6 @@ class LocalLibrary extends Fsm
 				handler path, cb
 			else
 				cb code: \ENOTFOUND
-			console.log "proto:", proto
-			console.log "path", path
 			# console.log "handler", handler
 			# ToolShed.set_obj_path obj, where, require what
 
