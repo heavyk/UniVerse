@@ -33,9 +33,6 @@ Co = require \co
 { Fsm, ToolShed } = require \MachineShop
 { Debug, _, Config } = ToolShed
 
-#peom_db = new PublicDB name: \poem
-#affinaty_db = new PublicDB name: \affinaty
-
 svc_name = process.env.SVC_NAME || Path.basename(__filename).split '.' .0
 debug = Debug "Service(#{svc_name})"
 
@@ -226,8 +223,8 @@ app.use (req, res, next) ->
 				<link rel="stylesheet" href="/theme/solarized.css">
 				<link rel="stylesheet" href="/build/component.css">
 				<!-- link rel="stylesheet" type="text/css" href="/build/bootstrap/dist/css/bootstrap.css" -->
-				<!--link rel="stylesheet/less" type="text/css" href="/build/bootstrap/less/bootstrap.less"-->
-				<link rel="stylesheet/less" type="text/css" href="/less/affinaty.less">
+				<!-- link rel="stylesheet/less" type="text/css" href="/build/bootstrap/less/bootstrap.less"-->
+				<!-- link rel="stylesheet/less" type="text/css" href="/less/screen.less" -->
 				<script type="text/javascript">
 				less = {
 						env: "development", // or "production"

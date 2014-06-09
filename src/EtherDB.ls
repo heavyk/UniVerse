@@ -11,26 +11,6 @@ LocalDB = require './LocalDB' .LocalDB
 
 debug = Debug \EtherDB
 
-get_path = (obj, str) ->
-	str = str.split '.'
-	i = 0
-	while i < str.length
-		obj = obj[str[i++]]
-	obj
-
-# I think the one above is the fastest.
-# I also think that the above function can be optimized by using indexOf and substr -- another time I suppose :)
-#OPTIMIZE! - jsperf anyone? (this is an almost useless optimization and should be added to Current too. Current shlould be fastest general lib - like lodash)
-#get_path2 = (obj, str) -> (str.split '.').reduce ((o, x) -> o[x]), obj
-
-set_path = (obj, str, val) ->
-	str = str.split '.'
-	while str.length > 1
-		obj = obj[str.shift!]
-	obj[str.shift!] = val
-
-
-
 class EtherDB extends Fsm
 	(@refs, opts) ->
 		if typeof opts is \string
@@ -42,9 +22,6 @@ class EtherDB extends Fsm
 			console.error "you need a name for your database!"
 			throw new Error "you need a 'name' for your database"
 
-		# if db = EtherDB.dbs[opts.name]
-		# 	return db
-
 		# this needs to be retreived from the architect :)
 
 		super "EtherDB(#{opts.name})"
@@ -54,9 +31,6 @@ class EtherDB extends Fsm
 				@exec \connect, opts
 		else
 			@exec \connect, opts
-		# throw new Error "you need a reference "
-		# @host = if opts.host => opts.host else '127.0.0.1'
-		# @port = if opts.port => opts.port else 8529
 
 	get: (encantador, incantation, version, opts) ->
 		console.log "EtherDB.get", &
@@ -79,36 +53,6 @@ class EtherDB extends Fsm
 		console.log "EtherDB.get  <\- ", bp
 		return bp
 
-			# process = (data) ->
-			# 	unless data
-			# 		attempt_disk!
-			# 	else
-			# 		#console.log "bp data:", typeof data, data
-			# 		#console.log "your bp(#name) is:",	ToolShed.objectify data
-			# 		poem = new Poem name, refs, ToolShed.objectify data
-			# 		poem.once "state:ready" ->
-			# 			console.log "dep:Poem ready:: ", name
-			# 			UniVerse.emit "dep:Poem:#name:ready"
-
-			# attempt_disk = ->
-			# 	path = Path.join \lib \Poems name+'.poem'
-			# 	ToolShed.readFile path, (err, data) ->
-			# 		self.storage.set "Process:#name", data
-			# 		process data
-			# dfd = self.storage.get "Process:#name"
-			# dfd.done process
-			# dfd.fail attempt_disk
-
-		# 	task = @task 'initialize bp or whatever'
-		# 	task.push (done) ->
-		# 		bp.once_initialized done
-		# 	task.end (err, res) ->
-		# 		console.log "we have the bp (and supposedly the instance)", res
-		# 		#obj = bp.express res
-
-		# patch: (obj) ->
-		# 	console.error "TODO: object patching"
-
 	initialize: ->
 		@ether = {}
 		task = @task "initialize EtherDB(#{@opts.name})"
@@ -125,21 +69,11 @@ class EtherDB extends Fsm
 				@transitionSoon \error
 			else
 				@transitionSoon \ready
-		/*
-		if opts.name
-			ToolShed.mkdir db_path, (err, dir) ~>
-				if err
-					@emit \error, err
-					@transition \error
-				else @transition \connect
-		*/
 
 	states:
 		uninitialized:
 			onenter: ->
 				@debug "entered uninitialized... do nothing, for now"
-			# 'node:onenter': ->
-
 
 		loading:
 			onenter: ->
@@ -158,31 +92,6 @@ class EtherDB extends Fsm
 		ready:
 			onenter: ->
 				@emit \ready
-
-			# get: (prefix, name, inst, cb) ->
-			# 	if typeof inst is \function
-			# 		cb = inst
-			# 	process = (data) ->
-			# 		unless data
-			# 			attempt_disk!
-			# 		else
-			# 			#console.log "bp data:", typeof data, data
-			# 			#console.log "your bp(#name) is:",	ToolShed.objectify data
-			# 			poem = new Poem name, refs, ToolShed.objectify data, {name}
-			# 			poem.once_initialized ->
-			# 				console.log "dep:poem ready:: ", name
-			# 				debugger
-			# 				UniVerse.emit "dep:Poem:#name:ready"
-
-				# attempt_disk = ->
-				# 	path = Path.join \lib \Poems name+'.poem'
-				# 	ToolShed.readFile path, (err, data) ->
-				# 		self.storage.set "Process:#name", data
-				# 		#ToolShed.objectify data
-				# 		process data
-				# dfd = self.storage.get "Process:#name"
-				# dfd.done process
-				# dfd.fail attempt_disk
 
 			fetch: (fqvn, cb) ->
 				console.log "hello! we want to get", fqvn

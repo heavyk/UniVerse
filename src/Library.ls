@@ -118,31 +118,4 @@ class Library extends Fsm
 
 
 
-
-	# get: (encantador, incantation, version) ->
-	# 	# fqvn is eg. Affinaty/{session_id}@latest
-	# 	if typeof inst is \function
-	# 		cb = inst
-	# 		inst = _universe.session.mid
-	# 	else if typeof version is \function
-	# 		cb = version
-	# 		inst = _universe.session.mid
-	# 		version = \latest
-
-	# 	if typeof @poems[poem] isnt \object
-	# 		@poems[poem] = {}
-	# 	else if bp = @poems[poem][version]
-	# 		cb bp
-	# 	else
-
-	# 	@poems[poem][version] = bp = Blueprint \Poem, poem, version
-	# 	bp.once_initialized cb
-
-
-	# 	console.log "load up a poem here"
-	# 	task = @task "load #{fqvn}"
-	# 	task.push (done) ~>
-	# 		#@refs.
-	# 		PublicDB.get \Poem
-
 export Library

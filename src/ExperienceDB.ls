@@ -129,115 +129,104 @@ class ExperienceDB extends Fsm
 		return null
 
 	_req: (method, key, vals, cb) ->
-		# process.nextTick ~>
-			id = @incantation
-			# if not key and method isnt \delete
-			# if key isnt "398444806567" and ~id.indexOf 'Affinaty'
-				# debugger
-			if key
-				if assert and method is \delete
-					if ~@deleted.indexOf key
-						console.log "this shouldn't happen... kinda an insurance policy while testing"
+		id = @incantation
+		if key
+			if assert and method is \delete
+				if ~@deleted.indexOf key
+					console.log "this shouldn't happen... kinda an insurance policy while testing"
+					debugger
+				else
+					@deleted.push key
+			id += "/#key"
+			if @__request[key]
+				console.log "already saving... throttle this"
+				console.log "TODO: add 'saving' 'saved' 'save_timeout' events plus debounce with a cooldown to try again"
+				@debug.todo "re-request in x time"
+				# XXX: re-request in x time
+				debugger
+				# _.debounce @_req, @, 10
+
+		opts = {method, path: "/db/#{id}"}
+		req = Http.request opts, (res) !~>
+			res.on \error (err) ->
+				if key
+					delete @__request[key]
+				else if ~(idx = @__request.indexOf(req))
+					@__request.splice idx, 1
+				else
+					@debug.error "unknown request!"
+				@emit "error:#key", err
+				debugger
+				console.error "we've got an error!!", err
+
+			data = ''; res.on \data (buf) -> if buf => data += buf
+
+			res.on \end ~>
+				@__request[key] = null
+				if res.statusCode is 200
+					# there should be a methid for an obj to register events
+					# also, to unregister the events
+					if method isnt \delete
+						xp = ToolShed.objectify data, {}, {name: id} #ToolShed.da_funk res, {}, {name: @id}
+						if xp._key and not xp._id
+							xp._id = @incantation+'/'+xp._key
+						cb null, xp if typeof cb is \function
+					else if typeof cb is \function
+						cb null, key
+					# switch method
+					# | \post =>
+					# 	# @emit \changed, key, xp, vals
+					# 	if typeof cb is \function
+					# 		cb null, vals <<< xp
+					# 	# @emit \found xp._key, xp
+					# 	# if key isnt xp._key
+					# 	# @_set xp._key, null, xp
+					# 		# key := xp._key
+					# | \get =>
+					# 	# @emit \found key, xp
+					# 	# @_set key, null, xp
+					# 	if typeof cb is \function
+					# 		cb null, xp
+					# | \patch =>
+					# 	# @_set key, vals._rev, vals
+					# 	# @emit \changed key, xp
+					# 	if typeof cb is \function
+					# 		cb null, xp
+					# | \delete =>
+					# 	# @emit \forgotten key
+					# 	# @emit \found key, xp
+					# 	@_set key, null, xp
+					# 	if typeof cb is \function
+					# 		cb null, key
+
+				else
+					# switch method
+					# | \patch =>
+					# 	# @_del key, _xp = vals <<< xp
+					# 	# @_set key, vals._rev, _xp = vals <<< xp
+					# 	# @emit \changed key, xp
+
+					# | \delete =>
+					# 	# @emit \forgotten key
+					# 	@_del key
+					# 	if typeof cb is \function
+					# 		cb null, key
+
+					code = res.statusCode
+					if code is 404
+						code = \ENOENT
+					else
 						debugger
-					else
-						@deleted.push key
-				id += "/#key"
-				if @__request[key]
-					console.log "already saving... throttle this"
-					console.log "TODO: add 'saving' 'saved' 'save_timeout' events plus debounce with a cooldown to try again"
-					@debug.todo "re-request in x time"
-					# XXX: re-request in x time
-					debugger
-					# _.debounce @_req, @, 10
+					# if code >= 300
+					# 	code = \EMOVED
+					@emit "error:#key", code: code
+					if typeof cb is \function
+						cb {code}, key
 
-			opts = {method, path: "/db/#{id}"}
-			console.log "sending req:", opts
-
-			# if method is \post and ~id.indexOf \Affinaty
-			# 	debugger
-			req = Http.request opts, (res) !~>
-				res.on \error (err) ->
-					if key
-						delete @__request[key]
-					else if ~(idx = @__request.indexOf(req))
-						@__request.splice idx, 1
-					else
-						@debug.error "unknown request!"
-					@emit "error:#key", err
-					debugger
-					console.error "we've got an error!!", err
-
-				data = ''; res.on \data (buf) -> if buf => data += buf
-
-				res.on \end ~>
-					# if ~id.indexOf \Affinaty
-					# 	debugger
-					console.log "done with the request:", method, id
-					@__request[key] = null
-					if res.statusCode is 200
-						# there should be a methid for an obj to register events
-						# also, to unregister the events
-						if method isnt \delete
-							xp = ToolShed.objectify data, {}, {name: id} #ToolShed.da_funk res, {}, {name: @id}
-							if xp._key and not xp._id
-								xp._id = @incantation+'/'+xp._key
-							cb null, xp if typeof cb is \function
-						else if typeof cb is \function
-							cb null, key
-						# switch method
-						# | \post =>
-						# 	# @emit \changed, key, xp, vals
-						# 	if typeof cb is \function
-						# 		cb null, vals <<< xp
-						# 	# @emit \found xp._key, xp
-						# 	# if key isnt xp._key
-						# 	# @_set xp._key, null, xp
-						# 		# key := xp._key
-						# | \get =>
-						# 	# @emit \found key, xp
-						# 	# @_set key, null, xp
-						# 	if typeof cb is \function
-						# 		cb null, xp
-						# | \patch =>
-						# 	# @_set key, vals._rev, vals
-						# 	# @emit \changed key, xp
-						# 	if typeof cb is \function
-						# 		cb null, xp
-						# | \delete =>
-						# 	# @emit \forgotten key
-						# 	# @emit \found key, xp
-						# 	@_set key, null, xp
-						# 	if typeof cb is \function
-						# 		cb null, key
-
-					else
-						# switch method
-						# | \patch =>
-						# 	# @_del key, _xp = vals <<< xp
-						# 	# @_set key, vals._rev, _xp = vals <<< xp
-						# 	# @emit \changed key, xp
-
-						# | \delete =>
-						# 	# @emit \forgotten key
-						# 	@_del key
-						# 	if typeof cb is \function
-						# 		cb null, key
-
-						code = res.statusCode
-						if code is 404
-							code = \ENOENT
-						else
-							debugger
-						# if code >= 300
-						# 	code = \EMOVED
-						@emit "error:#key", code: code
-						if typeof cb is \function
-							cb {code}, key
-
-			if key => @__request[key] = req
-			else @__request.push req
-			if vals => req.write req_txt = JSON.stringify vals
-			req.end!
+		if key => @__request[key] = req
+		else @__request.push req
+		if vals => req.write req_txt = JSON.stringify vals
+		req.end!
 
 	# XXX: add rev to all these functions
 	get: (key, rev, cb) ->

@@ -189,22 +189,6 @@ class StoryBook extends Fsm
 		uninitialized:
 			onenter: ->
 				@debug "StoryBook waiting for something to do..."
-				# debugger
-				# @transition \ready
-
-			# open: (name, version) ->
-			# 	console.error "load poem: Poem/#{name}"
-			# 	bp = UniVerse.archive.blueprint \Poem, name
-			# 	bp.once_initialized ~>
-			# 		console.error "poem initialized", bp._blueprint
-			# 		opts = ToolShed.da_funk bp._blueprint, refs, name: bp.fqvn
-			# 		console.error "objectify res:", bp._blueprint, opts
-			# 		opts.path = url.path if url.path
-			# 		# console.error "bp.machina", typeof opts.machina, opts.machina
-			# 		# opts.machina = {} unless opts.machina
-			# 		@_[_universe.poem] = poem = bp.inst \affinaty #'affinaty' # {url}
-			# 		console.error "POEM:", poem
-			# 		# done!
 
 			'node-webkit:onenter': !->
 				console.log "doing uninitialized:node-webkit"
@@ -212,7 +196,6 @@ class StoryBook extends Fsm
 				process.on \uncaughtException (err) ~>
 					console.error "uncaught error:", err.stack
 					throw err
-				#TODO: add watcher
 
 			'browser:onenter': !->
 				$ window .bind \click, (e) ~>
@@ -258,14 +241,6 @@ class StoryBook extends Fsm
 					if url = evt.originalEvent.state
 						console.log "popstate", evt, url
 						console.log "TODO!!!! - back button!"
-						# console.log "poetry", poetry, poetry?mun
-						# console.log "::", url, evt.originalEvent
-						# if @mun isnt url.mun
-						# 	console.error "you were a different mun back then!!"
-						# 	console.error "TODO: switch the mun"
-						# if @poem isnt url.poem
-						# 	console.error "does no good to route on a differen poem!!"
-						# 	console.error "TODO: switch the poem"
 						if url then @route url.path, true
 					else
 						console.error "POP STATE"
@@ -403,30 +378,6 @@ class StoryBook extends Fsm
 			poem.transition path, {poem, path, mun}
 			console.log "after transition"
 
-		switch proto
-		| \affinaty =>
-			console.log "affinaty router... #{proto}:#{poem} @ path: #{path}"
-			# t_cur_file = Path.resolve \lib, poem, poem+'.js'
-			# if cur_file isnt t_cur_file
-			# 	if cur_watcher
-			# 		cur_watcher.stop!
-			# 	cur_file := t_cur_file
-			# cur = require t_cur_file
-			/*
-			cur_watcher := Fs.watchFile t_cur_file, {interval: 200}, ~>
-				console.log "file changed", &
-				_.each global.require.cache, (m, k) ~>
-					if ~k.indexOf(cur_file) or ~k.indexOf("PublicDB") or ~k.indexOf("Poem") or ~k.indexOf("arango")
-						delete global.require.cache[k]
-				cur = require cur_file
-				console.log "reloading...", path, refs
-				refs.poem.transitionSoon path
-			*/
-			# for now all curs are splash
-		# | otherwise =>
-		# 	console.error "sorry the #{proto} protocol isn't supported yet"
-		# 	return
-		# path
 		switch path
 		| \/logout =>
 			@exec \logout

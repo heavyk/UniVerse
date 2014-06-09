@@ -26,35 +26,6 @@ require! \MachineShop
 # ConceptDB -> Concept -> Idea
 # EstablishDB -> Infrastructure (for npm modules - LevelDB backed)
 
-# ArangoDB = require \arango
-# db = new ArangoDB.Connection "http://dev.affinaty.com:1111"
-# db.query.for \c
-# 	.in \Comment
-# 	.filter 'c.sender == @sender'
-# 	.limit '10, 20'
-# 	.return \c
-# 	.count(5).exec {sender: "1234"}, (err, res) ->
-# 		# debugger
-# 		console.log "res", err, res
-
-# db.query.count 5 .exec """
-# FOR c IN Comment
-# 	FILTER c.sender == @sender
-# 	LIMIT 0, 20
-# 	RETURN c
-# """, {sender: "1234"}, (err, res) ->
-# 	debugger
-# 	console.log "res", err, res
-
-# db.simple.example \Blueprint, {encantador: \Poem, incantation: \Affinaty}, {}, (err, res) ->
-# 	# debugger
-# 	if err
-# 		console.log err+''
-# 	else if res.count
-# 		console.log "results:", res.count
-# 		b = res.result.0
-# 		console.log "------>", "#{b.encantador}:#{b.incantation}@#{b.version}"
-
 # a Mutable element (Verse) has both a Word (fixed) and Voice (cardinal) - and they're all imbued with meaning :)
 # if the voice doesn't have meaning yet, it's empty
 # if the word doesn't have meaning yet, it's empty
@@ -501,14 +472,6 @@ default_protos = {
 			cb null, mod
 		catch
 			cb e
-	# concept: (path, cb) ->
-	# 	console.log "fetching concept:", path
-		# impl = new Implementation path: "src/Laboratory.concept.ls" outfile: "library/Laboratory.concept.js"
-		# impl.on \ready ->
-		# 	@_concepts[concept] = impl.imbue Reality
-		# 	lab = new Laboratory { library }, technician: \volcrum
-	# proto: (proto, cb) ->
-	# 	cb null, protos[proto]
 }
 
 { Implementation } = require './Implementation'
