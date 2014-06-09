@@ -1,4 +1,14 @@
 
+# charting / graph library
+# http://dc-js.github.io/dc.js/
+
+# credit card form
+# http://jessepollak.github.io/card/
+
+# split the ssl into a subsystem
+# https://github.com/gozdal/accessl/
+
+
 encantador: \Word
 incantation: \UniVerse
 type: \Abstract

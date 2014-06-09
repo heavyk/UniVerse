@@ -1,14 +1,18 @@
 idea: \Laboratory
-version: \0.1.0
+name: \Laboratory
+version: \0.1.1
 description: "Volcrum's Lare"
 concepts:
-	Technician:				\idea://Technician
-	Project:					\idea://Project
-	Library:					\idea://Library
+	Technician:				\implementation://Technician
+	Project:					\implementation://Project
+	Library:					\implementation://Library
 local:
 	Fs:								\node://fs
 	Path:							\node://path
-	# Walk:							\npm://walkdir # soon, this is fixed... first compile the library
+	Walk:							\npm://walkdir
+	MachineShop:			\npm://MachineShop
+	ToolShed:					\npm://MachineShop.ToolShed
+	Config:						\npm://MachineShop.Config
 # poetry:
 # 	Word:
 # 		Technician:			\latest
@@ -20,38 +24,29 @@ embodies:
 	* \Verse
 	* \Interactivity
 
-# (refs, opts) ->
-# 	console.log "lab:::::::::::", typeof refs
-# 	if typeof refs isnt \object
-# 		refs = {}
-# 	if typeof opts isnt \object
-# 		opts = {}
-
-# 		# throw new Error "Laboratory 'opts' must be an object"
-
-# 	@prjs = []
-# 	@refs = refs
-# 	@config = opts.config || 'laboratory.json'
-# 	@opts = opts
-# 	super 'Laboratory', opts
-# 	if opts.technician
-# 		@exec \set:technician opts.technician
 machina:
 	initialize: ->
+		console.log "Loading Vulcrum's Lare..."
+		if typeof @refs.library isnt \object
+			@debug.error "you must have a reference library"
 		@debug "Loading Vulcrum's Lare..."
+		unless @config
+			@config = 'laboratory.json'
+		@debug "done initialize"
 
 	# eventListeners: {}
 
 	states:
 		uninitialized:
 			onenter: ->
-				console.log "NO WAY!!!", @Fs
-				ToolShed.searchDownwardFor @config, (@opts.config_path || process.cwd!), (err, path) ~>
+				@debug "uninitialized"
+				console.log "state.uninitialized"
+				@ToolShed.searchDownwardFor @config, ((@config_path) || process.cwd!), (err, path) ~>
 					# assert this instanceof Laboratory
 					if err
 						@transition \setup
 					else
-						cfg = Config path
+						cfg = @Config path
 						# return
 						cfg.on \ready ~>
 							# assert 	@ instanceof Laboratory
@@ -61,9 +56,9 @@ machina:
 							else
 								@exec \prompt:path
 
-
 		ready:
 			onenter: ->
+				console.log "LAB READYzzz"
 				@emit \ready
 
 			'set:technician': (who) ->
@@ -138,7 +133,7 @@ machina:
 		'set:path': (path) ->
 			console.log "trying to set path:", path
 			# path = @LAB.path
-			ToolShed.stat path, (err, st) ~>
+			@ToolShed.stat path, (err, st) ~>
 				if err
 					throw err
 				else if st.isDirectory!
@@ -193,10 +188,10 @@ machina:
 			# walker.on \end ~>
 			# 	@transition \ready
 		'prompt:path': ->
-			dir = @opts.path || @LAB.path || Path.join ToolShed.HOME_DIR, 'Projects'
+			dir = @opts.path || @LAB.path || @Path.join @ToolShed.HOME_DIR, 'Projects'
 			ask_path = @prompt "Laboratory Projects path:", dir, (res) ~>
 				if typeof res is \string
-					ToolShed.stat res, (err, st) ~>
+					@ToolShed.stat res, (err, st) ~>
 						if err
 							if err.code is \ENOENT
 								console.log "TODO: ask the technician if they want to create the path?"

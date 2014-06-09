@@ -44,12 +44,13 @@ library = new LocalLibrary {multiverse},
 add_growl = (fsm) ->
 	title = fsm.namespace
 	title = title.substr 0, title.length - 4
-	fsm.on \notify (msg) ->
-		if growl_enabled => Growl msg, {title}
-	fsm.on \error, (err) ->
-		if growl_enabled => Growl err.message, {title, image: \./icons/fail.png}
-	fsm.on \success, (dd) ->
-		if growl_enabled => Growl dd.message, {title, image: \./icons/success.png}
+	# fsm.on \debug, (data) -> Growl data.message, {title}
+	fsm.on \debug:notify, (data) -> Growl data.message, {title, image: \./icons/fail.png}
+	fsm.on \debug:error, (data) -> Growl data.message, {title, image: \./icons/fail.png}
+
+	fsm.on \compile:success, (dd) ->
+		Growl "#{@path} compiled correctly", {title, image: \./icons/success.png}
+	fsm.on \compile:failure, (err) -> Growl err.message, {title, image: \./icons/fail.png}
 
 add_dir_growl = (dir) ->
 	dir.on \new:SrcDir (d) ->
@@ -57,9 +58,9 @@ add_dir_growl = (dir) ->
 	dir.on \new:Src (src) ->
 		add_growl src
 
-impl = new Implementation path: "src/Laboratory.concept.ls" outfile: "library/Laboratory.concept.js"
-impl.on \ready (current_impl) ->
-
+add_growl \
+	impl = new Implementation path: "src/Laboratory.concept.ls" outfile: "library/Laboratory.concept.js"
+impl.on \ready ->
 	Laboratory = impl.imbue Reality
 	lab = new Laboratory { library }, technician: \volcrum
 

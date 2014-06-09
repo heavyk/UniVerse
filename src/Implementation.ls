@@ -5,6 +5,7 @@ LiveScript = require \LiveScript
 
 Fs = require \fs
 Path = require \path
+DeepDiff = require \deep-diff
 
 /*
 'and|initialize': (key) ->
@@ -310,122 +311,9 @@ Path = require \path
 
 */
 
-class Implementation extends Fsm # Reality
-	(opts) ->
-		if typeof opts is \string
-			opts = {path: opts}
-		else if typeof opts.path isnt \string
-			throw new Error "you must define a path for your Implementation"
-
-		@impl = {}
-		@src = ''
-
-		super "Implementation(#{opts.path})", opts
-		@exec \read opts.path
-
-	imbue: (essence) ->
-		idea = (impl = @impl).idea
-		console.log "IMBUE", typeof @impl
-		machina = @impl.machina
-		eval """
-		(function(){
-			var #{idea} = idea_inst = (function(superclass){
-				var prototype = extend$((import$(#{idea}, superclass).displayName = '#{idea}', #{idea}), superclass).prototype, constructor = #{idea};
-				function #{idea} (refs, opts) {
-					//console.log("creating '#idea'...", this.displayName)
-					if(!(this instanceof #{idea})) return new #{idea}(key, opts);
-					//#{if @type is \Cardinal then 'DaFunk.extend(this, Tone);' else ''}
-					//#{if @type is \Mutable then 'DaFunk.extend(this, Timing);' else ''}
-					//#{if @type is \Fixed then 'DaFunk.extend(this, Symbolic);' else ''}
-					this.refs = refs;
-					#{idea}.superclass.call(this, impl, opts);
-				}
-				DaFunk.extend(prototype, machina);
-				return #{idea};
-			}(essence));
-		}())
-		"""
-
-		return idea_inst
-	states:
-		uninitialized:
-			onenter: ->
-				@debug "waiting for impl..."
-
-		ready:
-			onenter: ->
-				console.log "ready"
-				@emit \ready @impl, @src
-
-			save:
-				onenter: ->
-					obj = @impl
-					json_str = if opts.ugly => JSON.stringify obj else DaFunk.stringify obj, DaFunk.stringify.desired_order path
-					if json_str isnt @src
-						path = @path
-						Fs.writeFile path, json_str, (err) ~>
-							if err
-								if err.code is \ENOENT
-									dirname = Path.dirname path
-									ToolShed.mkdir dirname, (err) ~>
-										if err
-											@transition \error, err
-										else @transition \retry
-								else
-									@transition \error, err
-							else
-								@src = json_str
-								@emit \saved obj, path, json_str
-							@transition \ready
-					else @transition \ready
-
-			retry:
-				onenter: ->
-					# TODO: add backoff support
-					setTimeout ~>
-						@transition @previousState
-					, 500
-
-			error:
-				onenter: (err) ->
-					console.log "OH NO AN ERROR", err
-
-	cmds:
-		read: (path) ->
-			if typeof path isnt \string
-				return
-
-			Fs.readFile path, 'utf-8', (err, data) ~>
-				is_new = false
-				if err
-					if err.code is \ENOENT
-						@emit \new
-						@is_new = true
-					else
-						@transition \error e
-				else
-					@src = data
-					@exec cmd = "compile:#{@lang}"
-					@once "executed:#cmd" ->
-						@transition \ready
-					# try
-					# 	switch ext = @parts[*-1]
-					# 	| \ls =>
-
-					# 	| \json =>
-					# 		_impl = JSON.parse data
-					# 		DaFunk.merge @impl, _impl
-					# catch e
-					# 	@transition \error e
-				# @transition \ready
-			file = Path.basename path
-			@parts = file.split '.'
-			if @parts.length > 1
-				@lang = @parts[*-1]
-			if @parts.length > 2
-				@proto = @parts[*-2]
-
-		'compile:ls': ->
+default_langs =\
+	ls:
+		compile: (lang) ->
 			try
 				console.log "gonna compile with lang: '#{@lang}'"
 				console.log "gonna compile with proto: '#{@proto}'"
@@ -472,32 +360,208 @@ class Implementation extends Fsm # Reality
 					res.output = LiveScript.run res.output, options, true
 					process.chdir CWD
 
+				@emit \compile:success, res
 				@impl = res.output
-
-				if res.blueprint or true
-					res.output = DaFunk.stringify res.output, <[name encantador incantation version embodies concepts eventListeners layout]>
-				else if res.json
-					res.output = DaFunk.stringify res.output, <[name version]>
-
-				@emit @lang, @outfile, res.output
-				if @outfile
-					Fs.writeFile @outfile, res.output, (err) ~>
-						if err
-							@emit \error, new Error "unable to write output to #{@outfile}"
-							@transition \error
-						else
-							@debug "wrote %s", @outfile
-							@emit \success message: "compiled: '#{@outfile}' successfully"
-							@transition \ready
-				# else
-				# 	@transition \ready
 			catch e
+				@emit \compile:failure, e
 				if ~e.message.indexOf 'Parse error'
 					console.log @path, ':', e.message
 				else
 					console.log @path, ':', e.stack
-				@transition \error, e
 
+			stringify: ->
+				try
+					output = DaFunk.stringify @impl, <[name encantador incantation version embodies concepts eventListeners layout]>
+					@emit @lang, @outfile, output
+					if @outfile
+						Fs.writeFile @outfile, output, (err) ~>
+							if err
+								@emit \error, new Error "unable to write output to #{@outfile}"
+								@transition \error
+							else
+								@debug "wrote %s", @outfile
+								@emit \success message: "compiled: '#{@outfile}' successfully"
+								@transition \ready
+					# else
+					# 	@transition \ready
+				catch e
+					if ~e.message.indexOf 'Parse error'
+						console.log @path, ':', e.message
+					else
+						console.log @path, ':', e.stack
+					@emit \stringify:error, e
+
+
+class Implementation extends Fsm # Reality
+	# idea: \Implementation
+	# embodies:
+	# 	\Growler
+	(opts) ->
+		if typeof opts is \string
+			opts = {path: opts}
+		else if typeof opts.path isnt \string
+			throw new Error "you must define a path for your Implementation"
+
+		@impl = {}
+		@_impls = []
+		@src = ''
+
+		super "Implementation(#{opts.path})", opts
+
+
+	watch: 100
+
+	imbue: (essence) ->
+		idea = (impl = @impl).idea
+		@debug.todo "save the imbued"
+		self = this
+		new_impl = (impl) ->
+			console.log "saving impl", self._impls.length
+			self._impls.push impl
+
+		machina = @impl.machina
+		eval """
+		(function(){
+			var #{idea} = idea_constructor = (function(superclass){
+				var prototype = extend$((import$(#{idea}, superclass).displayName = '#{idea}', #{idea}), superclass).prototype, constructor = #{idea};
+				function #{idea} (refs, opts) {
+					//console.log("creating '#idea'...", this.displayName)
+					if(!(this instanceof #{idea})) return new #{idea}(key, opts);
+					//#{if @type is \Cardinal then 'DaFunk.extend(this, Tone);' else ''}
+					//#{if @type is \Mutable then 'DaFunk.extend(this, Timing);' else ''}
+					//#{if @type is \Fixed then 'DaFunk.extend(this, Symbolic);' else ''}
+					this.refs = refs;
+					#{idea}.superclass.call(this, impl, opts);
+					new_impl(this);
+				}
+				DaFunk.extend(prototype, machina);
+				return #{idea};
+			}(essence));
+		}())
+		"""
+		return idea_constructor
+	states:
+		uninitialized:
+			onenter: ->
+				# if @path
+				@on \set:src -> @exec \compile
+				@on \compile:success, (res) ->
+					#TODO: update reality
+
+					_.each @_impls, (impl) ->
+						lhs = impl._impl
+						rhs = res.output
+						d = DeepDiff.observableDiff lhs, rhs, (d) ->
+							switch d.kind
+							| \E =>
+								if typeof d.lhs is \function and typeof d.rhs is \function
+									if d.lhs.toString! is d.rhs.toString!
+										return
+							DeepDiff.applyChange lhs, rhs, d
+							switch d.path.0
+							| \local =>
+								console.log "TODO: update any locals. changed:", d
+							| \machina =>
+								d.path.shift!
+								# console.log "applying:", d
+								DeepDiff.applyChange impl, rhs.machina, d
+
+				@once \executed:compile -> @transition \ready
+				@exec \read @path
+
+
+
+		ready:
+			onenter: ->
+				console.log "ready"
+				@emit \ready @impl, @src
+
+			save:
+				onenter: ->
+					obj = @impl
+					json_str = if opts.ugly => JSON.stringify obj else DaFunk.stringify obj, DaFunk.stringify.desired_order path
+					if json_str isnt @src
+						path = @path
+						Fs.writeFile path, json_str, (err) ~>
+							if err
+								if err.code is \ENOENT
+									dirname = Path.dirname path
+									ToolShed.mkdir dirname, (err) ~>
+										if err
+											@transition \error, err
+										else @transition \retry
+								else
+									@transition \error, err
+							else
+								@src = json_str
+								@emit \saved obj, path, json_str
+							@transition \ready
+					else @transition \ready
+
+			retry:
+				onenter: ->
+					# TODO: add backoff support
+					setTimeout ~>
+						@transition @previousState
+					, 500
+
+			error:
+				onenter: (err) ->
+					console.log "OH NO AN ERROR", err
+
+	cmds:
+		read: (path) ->
+			if typeof path is \undefined
+				path = @path
+			if typeof path isnt \string
+				return
+
+			console.log "read:", path
+			if path isnt @path and @watcher
+				@watcher = null
+			if ms = @watch and not @watcher
+				console.log "watch:", @watch
+				@watcher = Fs.watchFile path, {interval: ms} (st1, st2) ~>
+					# console.log "disturbance", &
+					# if st.size
+					@exec \read
+
+
+			Fs.readFile path, 'utf-8', (err, data) ~>
+				is_new = false
+				if err
+					if err.code is \ENOENT
+						@emit \new
+						@is_new = true
+					else
+						@transition \error e
+				else
+					if @src isnt data
+						@src = data
+						@emit \set:src, data
+						console.log "set...."
+					console.log "YAY!!"
+					# try
+					# 	switch ext = @parts[*-1]
+					# 	| \ls =>
+
+					# 	| \json =>
+					# 		_impl = JSON.parse data
+					# 		DaFunk.merge @impl, _impl
+					# catch e
+					# 	@transition \error e
+				# @transition \ready
+			file = Path.basename path
+			@parts = file.split '.'
+			if @parts.length > 1
+				@lang = @parts[*-1]
+			if @parts.length > 2
+				@proto = @parts[*-2]
+
+		compile: ->
+			# if @lang is \ls
+			if lang = default_langs[@lang]
+				lang.compile ...
 
 # class Src extends Fsm
 # 	(@opts, @refs) ->

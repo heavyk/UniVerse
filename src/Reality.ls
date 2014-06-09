@@ -60,26 +60,16 @@ class Reality extends Fsm
 		super impl.name, impl.id, opts
 
 	initialize: ->
-		console.log "initialize"
 		self = this
-		console.log "locals:", @_impl.local
 		if locals = @_impl.local
-			_.each locals, (uri, where) ~>
-				console.log "get:", uri
-				@refs.library.exec \get uri, (err, res) ->
-					console.log "err", err
-					console.log "ToolShed.set_obj_path", where, typeof self, typeof res
-					locals[where] = res
+			deps = Object.keys locals
+			for where, uri of locals
+				@refs.library.exec \get uri, (err, res) ~>
+					if err => @debug.error ''+err.stack
 					ToolShed.set_obj_path where, self, res
-					do_trans = true
-					for k, v of locals
-						# console.log "l", k, v
-						if typeof v is \string
-							do_trans = false
-							break
-
-					if do_trans
-						self.transition @_initialState || \uninitialized
+					deps.splice deps.indexOf(where), 1
+					if deps.length is 0
+						self.transitionSoon @initialState = @_initialState || \uninitialized
 
 		# if modifier = @improves
 		# 	_.each modifier, (mod) ->
@@ -137,12 +127,16 @@ class Reality extends Fsm
 Reality.modifiers =
 	Idea:
 		'and|initialize': ->
-			if typeof @concepts isnt \object
-				@concepts = {}
-			if concepts = @concepts
+			if typeof @_concepts isnt \object
+				@_concepts = {}
+			if concepts = @_impl.concepts
 				_.each concepts, (concept, uri) ->
 					console.log "concept:", concept, uri
-					ToolShed.set_obj_path concept, new Idea @refs, uri
+					# impl = new Implementation path: "src/Laboratory.concept.ls" outfile: "library/Laboratory.concept.js"
+					# impl.on \ready ->
+					# 	@_concepts[concept] = impl.imbue Reality
+					# 	lab = new Laboratory { library }, technician: \volcrum
+					# ToolShed.set_obj_path concept, new Idea @refs, uri
 			else
 				@concepts = {}
 
