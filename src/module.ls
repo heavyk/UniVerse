@@ -12,7 +12,9 @@ Fstream = require \fstream
 { ToolShed, Fsm } = require \MachineShop
 spawn = require \child_process .spawn
 
-export gyp_build = (mod_dir, done) ->
+Uri = require './Blueprint' .Uri
+
+gyp_build = (mod_dir, done) ->
 	#console.error "TODO: check to see if output_dir exists and the file is new"
 	#console.error "TODO: first try building, and then if that doesn't work rebuild it"
 	#console.log "gyp", ToolShed.nw_version, mod_dir
@@ -37,18 +39,22 @@ export gyp_build = (mod_dir, done) ->
 
 class Module extends Fsm
 	(refs, opts) ->
-		unless refs.uV #instanceof UniVerse
-			throw new Error "module needs to be a part of a UniVerse"
-
-		unless refs.repo #instanceof Repo
-			throw new Error "module needs to be a part of a repo"
 
 		@refs = refs
+		if typeof opts is \string
+			# uri = new Uri opts
+			if ~(i = opts.indexOf '@')
+				@name = opts.substr 0, i
+				@version = opts.substr i+1
+			else
+				@name = opts
+				@version = \latest
+		else
+			@name = opts.name
+			@version = opts.version || \latest
+			@path = opts.path || @name
 
-		@name = opts.name
-		@version = opts.version
-		@path = opts.path
-		super "Module(new)"
+		super "Module(#{@name}@#{@version})"
 		if opts.path
 			@exec \open opts.path
 
@@ -74,8 +80,7 @@ class Module extends Fsm
 						mod.transition \open
 				else @transition \open
 
-		open:
-			onenter: ->
+			open: (path) ->
 				#console.log "onenter", mod, qs
 				#console.log "Sencillo", Sencillo.modules
 				unless qs.slashes
@@ -301,44 +306,44 @@ class Module extends Fsm
 
 
 
-export Module = (opts, refs, mod_ready_cb) ->
-	uri = if opts.path =>	'npm:'+opts.name else opts.uri
-	repo = refs.repo
-	uV = refs.uV
+# export Module = (opts, refs, mod_ready_cb) ->
+# 	uri = if opts.path =>	'npm:'+opts.name else opts.uri
+# 	repo = refs.repo
+# 	uV = refs.uV
 
-	debug = Debug "Module(#{uri})"
+# 	debug = Debug "Module(#{uri})"
 
-	#if typeof into is \string
-	#	Fs.exists
-	console.log "before getting module: " + opts.name+'@'+opts.version
-	#console.log "try module:", Sencillo.modules, Sencillo.modules[opts.name+'@'+opts.version]
-	console.log uV
-	#if p = uV.modules[opts.name+'@'+opts.version]
-	#	p.install opts.path, (err) ->
+# 	#if typeof into is \string
+# 	#	Fs.exists
+# 	console.log "before getting module: " + opts.name+'@'+opts.version
+# 	#console.log "try module:", Sencillo.modules, Sencillo.modules[opts.name+'@'+opts.version]
+# 	console.log uV
+# 	#if p = uV.modules[opts.name+'@'+opts.version]
+# 	#	p.install opts.path, (err) ->
 
-	if typeof uri is \string
-		qs = Url.parse uri
-		if uri.charAt(0) is '/' or uri.substr(0, 2) is './'
-			qs.protocol = \file:
-	else return mod_ready_cb new Error "unknown uri: #{uri}"
+# 	if typeof uri is \string
+# 		qs = Url.parse uri
+# 		if uri.charAt(0) is '/' or uri.substr(0, 2) is './'
+# 			qs.protocol = \file:
+# 	else return mod_ready_cb new Error "unknown uri: #{uri}"
 
-	mod = new Fsm "Module(#{opts.name})" {
-		initialize: ->
+# 	mod = new Fsm "Module(#{opts.name})" {
+# 		initialize: ->
 
-			debug "init package #{opts.name}@#{opts.version}"
+# 			debug "init package #{opts.name}@#{opts.version}"
 
-		events:
-			error: (err) ->
-				console.error "ERR:", err
-				@transition \error
+# 		events:
+# 			error: (err) ->
+# 				console.error "ERR:", err
+# 				@transition \error
 
 
 
-	}
-	if typeof mod_ready_cb is \function
-		mod.once \ready, ->
-			debug "repo is ready!!"
-			mod_ready_cb ...
-	return mod
+# 	}
+# 	if typeof mod_ready_cb is \function
+# 		mod.once \ready, ->
+# 			debug "repo is ready!!"
+# 			mod_ready_cb ...
+# 	return mod
 
 export Module

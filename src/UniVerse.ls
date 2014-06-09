@@ -6,15 +6,31 @@ Path = require \path
 _ = require \lodash
 Rimraf = require \rimraf
 Walk = require \walkdir
-Debug = require \debug
-debug = Debug 'UniVerse'
 
 Semver = require \semver
 Ini = require \ini
 sh = require \shelljs
 
+# I imagine that we could make LiveScript compile the requires something like this:
+# Object.defineProperty global, "Repo",
+# 	get: ->
+# 		version = module.dependencies.Repo
+#  ... something like that. more later. gatta go.
+
+# OH! the Archivista will take care of all file downloads.
+# it'll be a process, that actually will save into GridFS as well
+# also, I want to have it work with zofli to get best compression results
 # Archivista = require \Archivista
-{ ToolShed, Fsm } = require \MachineShop
+if typeof process is \object
+	process.env.MACHINA = 1234
+
+{ ToolShed, DaFunk, Fsm, Fabuloso, Machina, Debug } = require \MachineShop
+debug = Debug 'UniVerse'
+
+{ PublicDB, LocalDB, Blueprint } = require './PublicDB'
+EtherDB = require './EtherDB' .EtherDB
+Library = require './Library' .Library
+
 Repo = require './repo' .Repo
 
 # make these configurable :)
@@ -26,16 +42,17 @@ export MULTIVERSE_PKGS_PATH = global.MULTIVERSE_PKGS_PATH = Path.join MULTIVERSE
 MULTIVERSE = require Path.join __dirname, 'multiverse.json'
 
 
-var UNIVERSE_ID, UNIVERSE_PATH, UNIVERSE_JSON, UNIVERSE_LIB_PATH, UNIVERSE_SRC_PATH, UNIVERSE_MODULES_PATH
+var UNIVERSE_ID, UNIVERSE_PATH, UNIVERSE_JSON, UNIVERSE_LIB_PATH, UNIVERSE_SRC_PATH, UNIVERSE_BIN_PATH, UNIVERSE_MODULES_PATH
 var TARGET_UNIVERSE
-set_universe_paths = (id) ->
+set_uV_paths = (id) ->
 	# TODO: make this a getter/setter on the global object
 	UNIVERSE_ID := id
 	UNIVERSE_PATH := Path.join MULTIVERSE_PATH, id
-	UNIVERSE_JSON := Path.join UNIVERSE_PATH, \package.json
 	UNIVERSE_LIB_PATH := Path.join UNIVERSE_PATH, \lib
 	UNIVERSE_SRC_PATH := Path.join UNIVERSE_PATH, \src
-	UNIVERSE_MODULES_PATH := Path.join UNIVERSE_PATH, \node_modules
+	UNIVERSE_BIN_PATH := Path.join UNIVERSE_PATH, \bin
+	UNIVERSE_MODULES_PATH := Path.join UNIVERSE_LIB_PATH, \node_modules
+	UNIVERSE_JSON := Path.join UNIVERSE_LIB_PATH, \package.json
 
 Object.defineProperty exports, "UNIVERSE_ID", get: -> UNIVERSE_ID
 Object.defineProperty exports, "UNIVERSE_PATH", get: -> UNIVERSE_PATH
@@ -43,20 +60,12 @@ Object.defineProperty exports, "UNIVERSE_JSON", get: -> UNIVERSE_JSON
 Object.defineProperty exports, "UNIVERSE_MODULES_PATH", get: -> UNIVERSE_MODULES_PATH
 Object.defineProperty exports, "UNIVERSE_LIB_JSON", get: -> UNIVERSE_LIB_JSON
 Object.defineProperty exports, "UNIVERSE_LIB_PATH", get: -> UNIVERSE_LIB_PATH
+Object.defineProperty exports, "UNIVERSE_SRC_PATH", get: -> UNIVERSE_SRC_PATH
+Object.defineProperty exports, "UNIVERSE_BIN_PATH", get: -> UNIVERSE_BIN_PATH
 
 # facilmente is the default universe
-set_universe_paths \facilmente
+set_uV_paths \sencillo
 
-WeakMap = global.WeakMap
-Proxy = global.Proxy
-
-# if typeof WeakMap isnt \function
-# 	global.WeakMap = require 'es6-collections' .WeakMap
-# if typeof Proxy is \undefined and not process.versions.'node-webkit' #global.window?navigator
-# 	console.log " ---------- installing node-proxy cheat...", Proxy, typeof Proxy
-# 	global.Proxy = Proxy = require 'node-proxy'
-# # reflection is the last thing required for dynamic objects
-# if typeof Reflect is \undefined then require 'harmony-reflect'
 
 # instead, do this as a prefix:
 # https://gist.github.com/ypresto/2145498
@@ -65,7 +74,9 @@ Proxy = global.Proxy
 # var UNIVERSE_PATH, UNIVERSE_JSON
 # var UNIVERSE_MODULES_PATH, UNIVERSE_LIB_JSON, UNIVERSE_LIB_PATH
 var UNIVERSE
+var _uV
 
+# TODO: move this over to the machina
 CORES = 8
 OS = switch process.platform
 | \darwin => \osx
@@ -85,38 +96,46 @@ global.ARCH = ARCH = switch process.arch
 #  -> UniVerse.modules.mymodule['4.3.x'] (does magic to get that module)
 #    -> _.each module.versions, (mod, v) ->
 
+class Architect extends Fsm
+	(refs, opts) ->
+		super "Architect"
+
+	states:
+		uninitialized:
+			onenter: ->
+				@transition \ready
+
+		ready:
+			onenter: ->
+				console.log "TheArchitect is ready!"
+
 class UniVerse extends Fsm
-	# INCOMPLETE: for now, the id just looks up the universe in sencillo... but it should do a lookup if it doesn't know what it is
-	#
-	# id: id for this universe
-	# 	Sencillo.universe[id]
-	# 	github://user/repo [TODO]
-	# 	git://uri [TODO]
-	# 	git://uri [TODO]
-	# opts:
-	# 	name: ??
-	# 	path:
 	(id, opts) ->
+		refs = uV: @
+		refs.machina = @machina = new Machina refs, name: \TheArchitect
+		@refs = refs
+
+		DaFunk.extend @, Fabuloso
 		super "UniVerse", opts
+		_uV := this
 
 	initialize: (id, opts) ->
 		@_modules = {}
 		if not id
-			id = \facilmente
+			id = \sencillo
 		@exec \load, id
 
 	states:
 		uninitialized:
 			onenter: ->
+				@refs.architect = @architect = new Architect @refs, name: "42"
+				@refs.library = @library = new Library @refs, name: \sencillo
+
+				# this is a pretty interesting concept that an instantiation is extending another instantiation.
+				# we could arrange these like puzzle pieces and create really dynamic machines
+				DaFunk.extend @refs.machina, @architect
 				console.log "initializing..."
 				console.log "TODO: install procstreams"
-				# switch OS
-				# | \osx =>
-				# 	CORES := $p "sysctl hw.ncpu" .pipe "awk '{print $2}'" .data (err, stdout, stderr) ->
-				# 		if stdout then CORES := Math.round (''+stdout) * 1
-				# | \linux =>
-				# 	CORES := $p "grep -c ^processor /proc/cpuinfo" .data (err, stdout, stderr) ->
-				# 		if stdout then CORES := Math.round (''+stdout) * 1
 				if @id
 					@path = Path.join MULTIVERSE_PATH, @id
 					console.log "mkdir", @path
@@ -126,7 +145,13 @@ class UniVerse extends Fsm
 							throw err
 						# UNIVERSE.path = @path
 
+			'node:onenter': ->
+				console.log "NODE UNIVERSE"
+				# @refs.akasha = @akasha = new EtherDB @refs, name: \MultiVerse
+				@refs.akasha = @akasha = new EtherDB @refs, name: \UniVerse
 
+			'browser:onenter': ->
+				@refs.archive = @archive = new PublicDB name: \UniVerse
 
 		install_deps:
 			onenter: ->
@@ -147,9 +172,6 @@ class UniVerse extends Fsm
 				else
 					@repo = repo
 					uV transition \ready
-				#@repo = Repo "git://github.com/duralog/facilmente", {
-				#	path: UNIVERSE_LIB_PATH
-				#}
 			loader: ->
 				load = @task "load universe modules"
 				load.push (done) ->
@@ -220,14 +242,14 @@ class UniVerse extends Fsm
 		download:
 			onenter: ->
 				# INCOMPLETE need to download the universe from the master universe
-				# this should also read, `construct_universe`
+				# this should also read, `construct_uV`
 				console.log "TODO: add updater..."
 				return @transition \build
 				build = @task 'download universe'
-				@updater = Updater {
-					manifest: "https://raw.github.com/MechanicOfTheSequence/UniVerse/master/manifest.json"
-					path: UNIVERSE_PATH
-				}
+				# @updater = Updater {
+				# 	manifest: "https://raw.github.com/MechanicOfTheSequence/UniVerse/master/manifest.json"
+				# 	path: UNIVERSE_PATH
+				# }
 
 				build.end (err, res) ->
 					console.error "done"
@@ -364,7 +386,7 @@ class UniVerse extends Fsm
 					build.push (done) ->
 						mongo.end (err) ->
 							console.log "mongo.end", &
-							UNIVERSE.bundle.mongo = MONGO_VERSION
+							UNIVERSE.bundle.mongo = TARGET_UNIVERSE.bundle.mongo
 							done ...
 
 				unless Semver.satisfies UNIVERSE.bundle.webkit, WEBKIT_VERSION
@@ -389,9 +411,27 @@ class UniVerse extends Fsm
 				*/
 
 	cmds:
-		git_clone: (uri, path, task, done) ->
-			# ToolShed.exec cmd, {cwd}, done
+		begin: ->
+			# console.log " [ * ] starting up the universe"
+			@debug.info "starting up the universe"
 
+		'node:begin': (opts, cb) ->
+			console.log "begin", opts, cb
+			# new StoryBook refs, opts
+			# new Http
+			@debug.info "starting up uV::Narrator"
+			Narrator = require './Narrator' .Narrator
+
+			cb new Narrator @refs, opts
+			# walker = Walk \processes
+			# walker.on \file (path, st) ->
+			# 	console.log "processes:file", &
+
+		'browser:begin': (el, cb) ->
+			# refs <<< @refs
+			refs.library = @library
+			StoryBook = require './StoryBook' .StoryBook
+			cb new StoryBook @refs, el, id
 
 		load: (id, task, done) ->
 			console.log "LOAD::::", id
@@ -400,87 +440,99 @@ class UniVerse extends Fsm
 			@id = id
 
 			# console.log "uV:", uV
-			unless contents = TARGET_UNIVERSE.contents
+			unless repos = TARGET_UNIVERSE.repos
 				return
 
-			set_universe_paths id
+			set_uV_paths id
+			empty_uV = {} <<< TARGET_UNIVERSE
+			empty_uV.bundle = {}
+			empty_uV.repos = {}
 			console.log "going to read:" UNIVERSE_JSON
-			ToolShed.readFile UNIVERSE_JSON, 'utf-8', (err, json) ~>
-				# 1. make sure all contents are fetched and installed
-				# 2. make sure all bundles are built
-				if err
-					if err.code is \ENOENT
-						json = {} <<< TARGET_UNIVERSE
-						json.bundle = {}
-						json.contents = {}
-						json = JSON.stringify json
-					else return @transition \error
-				try
-					console.log "gonna parse...", err, json
-					UNIVERSE := json = JSON.parse json
-					console.log "UNIVERSE", json
-					# the package should have bundle: {version, dependencies} etc.
-					# @transition \install_deps
-					# @transition \load_modules
-					task = @task "UniVerse starting up.."
-					task.concurrency = 20
-					modules_path = Path.join UNIVERSE_SRC, \node_modules
-					console.log "walking...", modules_path
-					walker = Walk modules_path, max_depth: 1
-					walker.on \directory (path, st) ~>
-						console.log "dir:", path
-						mod_name = Path.basename path
-						if mod_name.0 isnt '.'
-							mod_path = Path.join modules_path, mod_name
-							pkg_json = Path.join mod_path, \package.json
-							task.push (done) ->
-								ToolShed.stat pkg_json, (err, p_st) ->
-									# if p_st
-									# 	console.log "st:", (+p_st.mtime), (+st.mtime)
-									# else
-									# 	console.log "err", err
-									if p_st and (+p_st.mtime < +st.mtime)
-										console.log "npm install .", {cwd: mod_path}
-										ToolShed.exec "npm install .", {cwd: mod_path}, (err) ->
-											if err
-												done err
-											else
-												Fs.utimes pkg_json, st.atime, p_st.mtime, (err) ->
-													done err
-										# done!
+			UNIVERSE := ToolShed.Config UNIVERSE_JSON, empty_uV
+			UNIVERSE.once \ready (config, data) ~>
 
-					# for path, opts of TARGET_UNIVERSE.contents
-					content_task = task.branch "install content..."
-					_.each TARGET_UNIVERSE.contents, (opts, path) ->
-						content_task.push (done) ->
-							@exec \content.get, path, opts, task, done
-					task.choke (done) ->
-						content_task.end (err, res) ->
-							console.log "!!!!!!!!!!!!!!!!!!!! content done"
+				# the package should have bundle: {version, dependencies} etc.
+				# @transition \install_deps
+				# @transition \load_modules
+				task = @task "starting up.."
+				task.concurrency = 20
+				modules_path = Path.join UNIVERSE_SRC, \node_modules
+				# walker = Walk UNIVERSE_MODULES_PATH, max_depth: 1
+				# walker.on \directory (path, st) ~>
+				# 	console.log "dir:", path
+				# 	mod_name = Path.basename path
+				# 	if mod_name.0 isnt '.'
+				# 		mod_path = Path.join modules_path, mod_name
+				# 		pkg_json = Path.join mod_path, \package.json
+				# 		task.push (done) ->
+				# 			ToolShed.stat pkg_json, (err, p_st) ->
+				# 				# if p_st
+				# 				# 	console.log "st:", (+p_st.mtime), (+st.mtime)
+				# 				# else
+				# 				# 	console.log "err", err
+				# 				if p_st and (+p_st.mtime < +st.mtime)
+				# 					console.log "npm install .", {cwd: mod_path}
+				# 					ToolShed.exec "#{UNIVERSE_BIN_PATH}/npm install .", {cwd: mod_path}, (err) ->
+				# 						if err
+				# 							done err
+				# 						else
+				# 							Fs.utimes pkg_json, st.atime, p_st.mtime, (err) ->
+				# 								done err
+				# 					# done!
+
+				task.push (done) ->
+					pkg_json = Path.join UNIVERSE_LIB_PATH, \package.json
+					ToolShed.stat UNIVERSE_LIB_PATH, (err, st) ->
+						if err => done err
+						else ToolShed.stat pkg_json, (err, p_st) ->
+							if p_st and (+p_st.mtime < +st.mtime)
+								ToolShed.exec "#{UNIVERSE_BIN_PATH}/npm install .", {cwd: UNIVERSE_LIB_PATH}, (err) ->
+									if err
+										done err
+									else
+										Fs.utimes pkg_json, st.atime, p_st.mtime, (err) ->
+											done err
+							else done err
+
+				# for path, opts of TARGET_UNIVERSE.repos
+				repo_task = task.branch "install repo..."
+				_.each TARGET_UNIVERSE.repos, (opts, path) ->
+					repo_task.push (done) ->
+						@exec \repo.get, path, opts, task, (err) ->
+							unless err
+								UNIVERSE.repos[path] = opts
 							done err
+				task.choke (done) ->
+					repo_task.end (err, res) ->
+						console.log "!!!!!!!!!!!!!!!!!!!! repo done"
+						done err
 
-					bundle_task = task.branch "bundle content..."
-					_.each TARGET_UNIVERSE.bundle, (v, b) ->
-						@debug "checking bundle: (%s@%s) satisfies (%s@%s)", b, UNIVERSE.bundle[b], b, TARGET_UNIVERSE.bundle[b]
-						unless Semver.satisfies UNIVERSE.bundle[b], TARGET_UNIVERSE.bundle[b]
-							@debug "bundling: %s@%s", b, v
-							bundle_task.push (done) ->
-								@exec "bundle:#b", v, task, done
-					task.choke (done) ->
-						bundle_task.end (err, res) ->
-							done err
-					task.push (done) -> @exec \install_modules task, done
-					task.end (err, res) ->
-						console.log "TASK.END"
-						if err
-							throw err
-						else @transition \ready
-				catch e
-					throw e
-					throw new Error "on event of error, we should download the binary universe (TODO)"
-					@exec \download
+				get_version = (version) ->
+					if typeof version is \string and version.indexOf('.') is version.lastIndexOf('.')
+						version += '.0'
+					version
+				bundle_task = task.branch "bundle repo..."
+				_.each TARGET_UNIVERSE.bundle, (v, b) ~>
+					console.log "UNIVERSE", UNIVERSE.bundle
+					@debug "checking bundle: (%s@%s) satisfies (%s@%s)", b, UNIVERSE.bundle[b], b, TARGET_UNIVERSE.bundle[b]
+					version = get_version UNIVERSE.bundle[b]
+					wanted = get_version TARGET_UNIVERSE.bundle[b]
+					console.log UNIVERSE.bundle[b], TARGET_UNIVERSE.bundle[b]
+					unless Semver.satisfies version, wanted
+						@debug "bundling: %s@%s", b, v
+						bundle_task.push (done) ->
+							@exec "bundle:#b", v, task, done
+				task.choke (done) ->
+					bundle_task.end (err, res) ->
+						done err
+				task.push (done) -> @exec \install_modules task, done
+				task.end (err, res) ->
+					console.log "TASK.END"
+					if err
+						throw err
+					else @transition \ready
 
-		'content.get': (path, opts, _task, done) ->
+		'repo.get': (path, opts, _task, done) ->
 			uri = Url.parse opts.upstream
 			if uri.protocol isnt 'github:'
 				done new Error "only github is supported for now"
@@ -508,79 +560,163 @@ class UniVerse extends Fsm
 									console.log "local clone done", &
 							else done err
 						else
-							console.log "git checkout #{opts.revision || 'master'}", {cwd: uv_path}
 							ToolShed.exec "git checkout #{opts.revision || 'master'}", {cwd: uv_path}, (code) ->
 								console.log "done checkout", &
+								if code
+									console.log "git checkout #{opts.revision || 'master'}", {cwd: uv_path}
 								done code, path
 			# exec ""
 			# MULTIVERSE_DEPS_PATH
 		'install_modules': (task, cmd_done) ->
 			# walker of node_modules dir comparing the package.json file time to the dir file time
 			cmd_done!
-		'bundle:arango': (version, task, cmd_done) ->
-			cmd_done!
-		'bundle:node': (version, task, cmd_done) ->
-			console.log "NOOODEEEE"
-			node_path = Path.join UNIVERSE_PATH, \third_party, \node
 
-			# UNIVERSE.bundle.node = version
-			node_build = task.branch 'build node'
-			node_build.choke (done) ->
-				ToolShed.exec "git reset --hard", cwd: node_path, done
-			node_build.choke (done) ->
+		'bundle:node': (version, task, cmd_done) ->
+			SRC_PATH = Path.join UNIVERSE_PATH, \src, \third_party, \node
+			build_task = task.branch "build #version"
+			build_task.choke (done) ->
+				ToolShed.exec "git reset --hard", cwd: SRC_PATH, done
+			build_task.choke (done) ->
+				ToolShed.exec "git checkout v#{version}", cwd: SRC_PATH, done
+			build_task.choke (done) ->
 				# FUTURO: me gustaría sacar un chroot que sea el mismo que usa chromium o algo asi
 				# eso seria mejor para compilar el universe para otras plataformas
 				env = process.env <<< {
 					CFLAGS: "-Os" # -march=native"
 					CXXFLAGS: "-Os" # -march=native"
 				}
-				ToolShed.exec "./configure --prefix=#{UNIVERSE_PATH}", cwd: node_path, done
-			node_build.choke (done) ->
-				ToolShed.exec "make -j#{CORES} install PORTABLE=1", cwd: node_path, done
-			node_build.end ->
+				ToolShed.exec "./configure --prefix=#{UNIVERSE_PATH}", cwd: SRC_PATH, done
+			build_task.choke (done) ->
+				ToolShed.exec "make -j#{CORES} install PORTABLE=1", cwd: SRC_PATH, done
+			build_task.end ->
 				console.log "build node end", &
 				UNIVERSE.bundle.node = version
 				cmd_done ...
-			# --prefix=
-			# ToolShed.exec "./configure --prefix=#{UNIVERSE_PATH}", cwd: node_path, done
-			# cmd_done!
+
 		'bundle:mongo': (version, task, cmd_done) ->
-			console.log "TODO: build task... for mongo"
-			MONGO_NAME = "mongodb-#{OS}-#{ARCH}-#{version}"
-			MONGO_URL = "http://fastdl.mongodb.org/#{OS}/#{MONGO_NAME}.tgz"
-			MONGO_SRC_PATH = Path.join MULTIVERSE_DEPS_PATH, MONGO_NAME
-			mongo = task.branch 'download mongo'
-			mongo.choke (done) -> ToolShed.mkdir MONGO_SRC_PATH, ->
-				done null, "mkdir done"
-			mongo.push (done) ->
-				#done = mongo_build_done
-				mongo_local = Path.join MULTIVERSE_DEPS_PATH, MONGO_NAME+'.tgz'
-				rejects = <[bsondump mongodump mongoexport mongofiles mongoimport mongorestore mongos mongosniff mongostat mongotop mongooplog mongoperf]>
-				Archivista.dl_and_untar {
-					url: MONGO_URL
-					file: mongo_local
-					path: MULTIVERSE_DEPS_PATH
-					task: mongo
-					filter: (header) -> ~rejects.indexOf header.path.substr ('bin/'+MONGO_NAME).length+1
-				}, done
-			mongo.choke (done) ->
-				Rimraf Path.join(MULTIVERSE_DEPS_PATH, MONGO_NAME), done
+			# later do this with toku
+			# /usr/local//Cellar/gcc/4.8.3/bin/gcc-4.8
+			# https://github.com/Tokutek/mongo/blob/master/docs/building.md
+			build_task = task.branch "build #version"
+			SRC_PATH = Path.join UNIVERSE_PATH, \src, \third_party, \mongo
+			build_task.choke (done) ->
+				ToolShed.exec "git reset --hard", cwd: SRC_PATH, done
+			build_task.choke (done) ->
+				ToolShed.exec "git checkout r#{version}", cwd: SRC_PATH, done
+			build_task.choke (done) ->
+				ToolShed.exec "scons --prefix=#{UNIVERSE_PATH} install -j#{CORES}", cwd: SRC_PATH, done
 			task.push (done) ->
-				mongo.end (err) ->
+				console.log "PUSH MONGO"
+				build_task.end (err) ->
 					console.log "mongo.end", &
-					UNIVERSE.bundle.mongo = MONGO_VERSION
+					UNIVERSE.bundle.mongo = version
 					done err
-			cmd_done!
+			task.end (err, res) ->
+				console.log "MONGO INSTALLED"
+				cmd_done!
+
+		# 'bundle:go': (version, task, cmd_done) ->
+		# 	GO_SRC_PATH = Path.join UNIVERSE_PATH, \src, \third_party, \golang
+		# 	ToolShed.stat GO_SRC_PATH, (err, st) ->
+		# 		build_task = task.branch "build #version"
+		# 		if err
+		# 			if err.code is \ENOENT
+		# 				build_task.choke (done) ->
+		# 					ToolShed.exec "hg clone -u release https://code.google.com/p/go #{GO_SRC_PATH}", done
+		# 		else
+		# 			build_task.choke (done) ->
+		# 				ToolShed.exec "hg pull", cwd: GO_SRC_PATH, (code) ->
+		# 					if code
+		# 						Rimraf GO_SRC_PATH, (err) ->
+		# 							if err => done err
+		# 							else ToolShed.exec "hg clone -u release https://code.google.com/p/go #{GO_SRC_PATH}", done
+
+		# 		build_task.choke (done) ->
+		# 			ToolShed.exec "hg checkout go#{version}", cwd: SRC_PATH, done
+		# 		build_task.choke (done) ->
+		# 			ToolShed.exec "sh all.bash" {cwd: "#{SRC_PATH}/src"} (err) ->
+		# 				if err
+		# 					console.warn "there might be an error in go:", err.message
+		# 					console.log "continuing..."
+		# 				# else
+		# 				# 	console.log "ALL INSTALLED"
+		# 				done!
+		# 		task.push (done) ->
+		# 			build_task.end (err) ->
+		# 				UNIVERSE.bundle.go = version
+		# 				done err
+
+		'bundle:arango': (version, task, cmd_done) ->
+			build_task = task.branch "build #version"
+			SRC_PATH = Path.join UNIVERSE_PATH, \src, \third_party, \ArangoDB
+			GO_PATH = Path.join SRC_PATH, \3rdParty, "go-#{if process.arch is \x64 => '64' else '32'}"
+			GO_SRC_PATH = Path.join UNIVERSE_PATH, \src, \third_party, \golang
+			build_task.push (done) ->
+				Fs.lstat GO_PATH, (err, st) ->
+					if st and st.isSymbolicLink!
+						done!
+					else
+						go_src = Path.join UNIVERSE_PATH, \src, \third_party, \golang
+						Fs.symlink go_src, GO_PATH, done
+			build_task.choke (done) -> ToolShed.exec "automake-1.14 --add-missing", cwd: SRC_PATH, done
+			build_task.choke (done) -> ToolShed.exec "autoreconf", cwd: SRC_PATH, done
+			build_task.choke (done) ->
+				ToolShed.exec <[ ./configure
+					--enable-all-in-one-v8
+					--disable-all-in-one-libev
+					--enable-all-in-one-icu
+					--enable-maintainer-mode
+					--enable-internal-go
+					--disable-mruby]>join(' ') + " --prefix=#{UNIVERSE_PATH}", cwd: SRC_PATH, done
+			# build_task.choke (done) -> quick_exec "cmake .", done
+			unless UNIVERSE.bundle.go
+				build_task.choke (done) ->
+					build_go_task = build_task.branch "build go"
+					ToolShed.stat GO_SRC_PATH, (err, st) ->
+						if err
+							if err.code is \ENOENT
+								build_go_task.choke (done) ->
+									ToolShed.exec "hg clone -u release https://code.google.com/p/go #{GO_SRC_PATH}", done
+						else
+							build_go_task.choke (done) ->
+								ToolShed.exec "hg pull", cwd: GO_SRC_PATH, (code) ->
+									if code
+										Rimraf GO_SRC_PATH, (err) ->
+											if err => done err
+											else ToolShed.exec "hg clone -u release https://code.google.com/p/go #{GO_SRC_PATH}", done
+									else done!
+
+							build_go_task.choke (done) ->
+								ToolShed.exec "hg checkout go1.2", cwd: GO_SRC_PATH, done
+							build_go_task.choke (done) ->
+								console.log "gonna build go now"
+								ToolShed.exec "sh all.bash -j#{CORES}" {cwd: "#{GO_SRC_PATH}/src"} (err) ->
+									if err
+										console.warn "there might be an error in go:", err.message
+										console.log "continuing..."
+									# else
+									# 	console.log "ALL INSTALLED"
+									done!
+
+							build_go_task.end (err) ->
+								console.log "go built...", err
+								UNIVERSE.bundle.go = '1.2'
+								done err
+			build_task.choke (done) -> ToolShed.exec "make -j#{CORES} install", cwd: SRC_PATH, done
+			build_task.end (err) ->
+				if err
+					@debug "compilation fiAILED	"
+					console.log "compilation fiAILED	"
+					# throw err
+
+				done err
+			task.push (done) ->
+					build_task.end (err) ->
+						UNIVERSE.bundle.arango = version
+						done err
 
 
-			# task = @task "load UniVerse"
-			# console.log "uV.contents:", uV.contents
-			# for path, repo of contents
-			# 	console.log "git clone #repo -> #path"
-			# 	task.push (done) ->
-			# 		# @exec \git_clone repo, path
-			# 		ToolShed.exec "git clone #uri #path", {cwd}, done
-
+		'process.start': (id, opts, task, cmd_done) ->
 
 # # modules: Reflect.Proxy {}, {
 # # 	enumerable: true
@@ -627,4 +763,26 @@ class UniVerse extends Fsm
 # 				vv := v
 # 				mod := m
 # 		return mod
-export global.UniVerse = UniVerse
+# export global.uV = uV
+if typeof global.abort is \undefined
+	Object.defineProperty global, "abort", {
+		get: ->
+			if typeof uV.error is \function
+				return _uV.error
+			throw new Error " [FATAL] could not continue"
+	}
+if typeof global.uV is \undefined
+	Object.defineProperty global, "uV", {
+		get: ->
+			_uV || _uV := new UniVerse
+			# debugger
+			return _uV
+	}
+Object.defineProperty exports, "uV", {
+	get: ->
+		_uV || _uV := new UniVerse
+		# debugger
+		return _uV
+}
+
+export UniVerse

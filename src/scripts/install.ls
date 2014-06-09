@@ -3,26 +3,39 @@
 Path = require \path
 Fs = require \fs
 
-_console_log = console.log
-global.console.log = (f) ->
-	# _console_log "local log...", f, &.length
-	if f is '@'
-		try
-			throw new Error "WOH"
-		catch e
-			console.log e.stack
-	_console_log ...
+# _console_log = console.log
+# global.console.log = (f) ->
+# 	# _console_log "local log...", f, &.length
+# 	if f is '@'
+# 		try
+# 			throw new Error "WOH"
+# 		catch e
+# 			console.log e.stack
+# 	_console_log ...
 
-UniVerse = require '../universe' .UniVerse
+# child_process = require \child_process
+# _spawn = child_process.spawn
+# child_process.spawn = (f) ->
+# 	# _console_log "local log...", f, &.length
+# 	try
+# 		console.log "spawn", &.0, &.1
+# 		_spawn ...
+# 	catch e
+# 		console.log "ERROR::::"
+# 		console.log e.stack
+
+
+UniVerse = require '../UniVerse'
 { ToolShed, Fsm } = require \MachineShop
 require \shelljs/global
 
-console.log "universe", UniVerse.UNIVERSE_PATH
-uV = new UniVerse
+# console.log "universe", uV.begin
+uV = UniVerse.uV
+uV.exec \begin \Affinaty@latest (narrator) ->
+	narrator.once \ready ->
+		console.log "we're ready to tell of our experiences now"
 
-uV.once \ready ->
-	console.log "uv??...", uV.state
-
+console.log "CURRENTLY WORKING ON: getting EtherDB imbuing the Ether correctly and starting the services"
 return
 
 arango_path = Path.resolve "#{__dirname}/../../third_party/ArangoDB"
@@ -44,9 +57,9 @@ go_path = Path.resolve "#{arango_path}/3rdParty/go-64"
 
 console.log "go_path", go_path
 
-class PublicDB extends Fsm
+class UniVerseInstaller extends Fsm
 	(refs) ->
-		super "PublicDB",
+		super "UniVerseInstaller",
 			# initialState: \lala
 
 	states:
@@ -234,5 +247,5 @@ class PublicDB extends Fsm
 			console.log etc-file opts
 
 
-pdb = new PublicDB
+pdb = new UniVerseInstaller
 

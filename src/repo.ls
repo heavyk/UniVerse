@@ -1,10 +1,10 @@
 
 Path = require \path
 Url = require \url
-spawn = require('child_process').spawn
+spawn = require \child_process .spawn
 
 _ = require \lodash
-Rimraf = require 'rimraf'
+Rimraf = require \rimraf
 
 #Fsm = require \Mental .Fsm
 { ToolShed, Fsm } = require \MachineShop

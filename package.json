@@ -11,18 +11,24 @@
   ],
   "bugs": "http://github.com/duralog/Blueshift/issues",
   "dependencies": {
-    "GridFS": "^0.3.0",
-    "backoff": "^2.3.0",
-    "base58-native": "^0.1.4",
+    "GridFS": "~0.3.0",
+    "backoff": "~2.3.0",
+    "base58-native": "~0.1.4",
     "browserify": "*",
-    "co": "^3.0.6",
+    "co": "~3.0.6",
     "co-multipart": "0.0.2",
-    "http-proxy": "^1.1.4",
+    "http-proxy": "~1.1.4",
     "isarray": "0.0.1",
-    "shoe": "0.0.15",
-    "suspend": "^0.5.1",
-    "thunkify": "^2.1.1",
-    "traverse": "^0.6.6"
+    "level-js": "~2.1.5",
+    "leveldown": "ssh://duralog.github.com:duralog/node-leveldown#0.11-wip",
+    "levelup": "~0.18.3",
+    "path-to-regexp": "~0.1.2",
+    "postal": "^0.10.0",
+    "procstreams": "^0.3.0",
+    "shoe": "~0.0.15",
+    "suspend": "~0.5.1",
+    "thunkify": "~2.1.1",
+    "traverse": "~0.6.6"
   },
   "devDependencies": {},
   "directories": {
@@ -60,7 +66,8 @@
   },
   "scripts": {
     "test": "node ./test/run.js",
-    "install": "node_modules/LiveScript/bin/lsc ./src/scripts/install.ls -n --harmony"
+    "install": "node_modules/LiveScript/bin/lsc ./src/scripts/install.ls -n --harmony",
+    "start": "node_modules/LiveScript/bin/lsc ./src/scripts/start.ls -n --harmony"
   },
   "webkit": {
     "plugin": true
