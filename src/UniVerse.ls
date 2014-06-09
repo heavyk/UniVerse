@@ -24,7 +24,7 @@ sh = require \shelljs
 if typeof process is \object
 	process.env.MACHINA = 1234
 
-{ ToolShed, Fsm, Fabuloso, Machina, Debug } = require \MachineShop
+{ ToolShed, DaFunk, Fsm, Fabuloso, Machina, Debug } = require \MachineShop
 debug = Debug 'UniVerse'
 
 { PublicDB, LocalDB, Blueprint } = require './PublicDB'
@@ -66,16 +66,6 @@ Object.defineProperty exports, "UNIVERSE_BIN_PATH", get: -> UNIVERSE_BIN_PATH
 # facilmente is the default universe
 set_uV_paths \sencillo
 
-WeakMap = global.WeakMap
-Proxy = global.Proxy
-
-# if typeof WeakMap isnt \function
-# 	global.WeakMap = require 'es6-collections' .WeakMap
-# if typeof Proxy is \undefined and not process.versions.'node-webkit' #global.window?navigator
-# 	console.log " ---------- installing node-proxy cheat...", Proxy, typeof Proxy
-# 	global.Proxy = Proxy = require 'node-proxy'
-# # reflection is the last thing required for dynamic objects
-# if typeof Reflect is \undefined then require 'harmony-reflect'
 
 # instead, do this as a prefix:
 # https://gist.github.com/ypresto/2145498
@@ -86,6 +76,7 @@ Proxy = global.Proxy
 var UNIVERSE
 var _uV
 
+# TODO: move this over to the machina
 CORES = 8
 OS = switch process.platform
 | \darwin => \osx
@@ -124,7 +115,7 @@ class UniVerse extends Fsm
 		refs.machina = @machina = new Machina refs, name: \TheArchitect
 		@refs = refs
 
-		ToolShed.extend @, Fabuloso
+		DaFunk.extend @, Fabuloso
 		super "UniVerse", opts
 		_uV := this
 
@@ -142,7 +133,7 @@ class UniVerse extends Fsm
 
 				# this is a pretty interesting concept that an instantiation is extending another instantiation.
 				# we could arrange these like puzzle pieces and create really dynamic machines
-				ToolShed.extend @refs.machina, @architect
+				DaFunk.extend @refs.machina, @architect
 				console.log "initializing..."
 				console.log "TODO: install procstreams"
 				if @id

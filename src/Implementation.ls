@@ -315,8 +315,8 @@ default_langs =\
 	ls:
 		compile: (lang) ->
 			try
-				console.log "gonna compile with lang: '#{@lang}'"
-				console.log "gonna compile with proto: '#{@proto}'"
+				@debug "gonna compile with lang: '#{@lang}'"
+				@debug "gonna compile with proto: '#{@proto}'"
 				if @lang isnt \ls
 					return
 
@@ -416,7 +416,6 @@ class Implementation extends Fsm # Reality
 		@debug.todo "save the imbued"
 		self = this
 		new_impl = (impl) ->
-			console.log "saving impl", self._impls.length
 			self._impls.push impl
 
 		machina = @impl.machina
@@ -469,11 +468,8 @@ class Implementation extends Fsm # Reality
 				@once \executed:compile -> @transition \ready
 				@exec \read @path
 
-
-
 		ready:
 			onenter: ->
-				console.log "ready"
 				@emit \ready @impl, @src
 
 			save:
@@ -516,15 +512,11 @@ class Implementation extends Fsm # Reality
 			if typeof path isnt \string
 				return
 
-			console.log "read:", path
 			if path isnt @path and @watcher
 				@watcher = null
 			if ms = @watch and not @watcher
-				console.log "watch:", @watch
 				@watcher = Fs.watchFile path, {interval: ms} (st1, st2) ~>
-					# console.log "disturbance", &
-					# if st.size
-					@exec \read
+					@exec \read path
 
 
 			Fs.readFile path, 'utf-8', (err, data) ~>
@@ -539,18 +531,7 @@ class Implementation extends Fsm # Reality
 					if @src isnt data
 						@src = data
 						@emit \set:src, data
-						console.log "set...."
-					console.log "YAY!!"
-					# try
-					# 	switch ext = @parts[*-1]
-					# 	| \ls =>
 
-					# 	| \json =>
-					# 		_impl = JSON.parse data
-					# 		DaFunk.merge @impl, _impl
-					# catch e
-					# 	@transition \error e
-				# @transition \ready
 			file = Path.basename path
 			@parts = file.split '.'
 			if @parts.length > 1

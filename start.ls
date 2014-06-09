@@ -65,28 +65,15 @@ impl.on \ready ->
 	Laboratory = impl.imbue Reality
 	lab = new Laboratory { library }, technician: \volcrum
 
-	# add_growl lab
-
-	# lab.until \ready ->
-	# 	Growl "all ready!", {title: lab.namespace, image: \./icons/success.png}
-	# 	growl_enabled := true
-
-
 	# lab.on \new:Project (prj) ->
 	# 	add_growl prj
 	# 	prj.on \new:SrcDir (dir) ->
 	# 		add_dir_growl dir
 
-
-
-# Source = require
-# bp = new Blueprint uv_bp
-# bp.on \ready ->
-# 	console.log "bp is ready"
-# 	Sencillo = UniVerse.imbue multiverse.sencillo
-# 	Sencillo.on \ready ->
-# 		console.log "UniVerse started"
-# 		console.log "to configure it, open http://localhost/ in your browser"
-# 		console.log "enjoy."
-# 		@debug.notify "started up UniVerse!"
+add_growl \
+	impl = new Implementation path: "src/MultiVerse.concept.ls" outfile: "library/MultiVerse.concept.js"
+impl.on \ready ->
+	MultiVerse = impl.imbue Reality
+	multiverse = new MultiVerse { library }
+	multiverse.exec \load \sencillo
 

@@ -1,5 +1,4 @@
 idea: \Laboratory
-name: \Laboratory
 version: \0.1.1
 description: "Volcrum's Lare"
 concept:
@@ -39,8 +38,6 @@ machina:
 	states:
 		uninitialized:
 			onenter: ->
-				@debug "uninitialized"
-				console.log "state.uninitialized"
 				@ToolShed.searchDownwardFor @config, ((@config_path) || process.cwd!), (err, path) ~>
 					# assert this instanceof Laboratory
 					if err
@@ -131,13 +128,11 @@ machina:
 
 	cmds:
 		'set:path': (path) ->
-			console.log "trying to set path:", path
 			# path = @LAB.path
 			@ToolShed.stat path, (err, st) ~>
 				if err
 					throw err
 				else if st.isDirectory!
-					console.log "using path %s", path
 					@debug "using path %s", path
 					@path = path
 					@transition \ready
