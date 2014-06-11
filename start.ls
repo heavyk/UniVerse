@@ -1,18 +1,13 @@
 # bootstrap the UniVerse
 
-
 Path = require \path
 Growl = require \Growl
-growl_enabled = false
-
 
 { DaFunk, Config } = require \MachineShop
-{ Blueprint, LocalLibrary } = require './src/Blueprint'
+{ Blueprint } = require './src/Blueprint'
 { Implementation } = require './src/Implementation'
 { Reality } = require './src/Reality'
 { LocalLibrary } = require './src/LocalLibrary'
-# { Laboratory } = require './src/Laboratory'
-# { LocalDB } = require './src/LocalDB'
 
 # ldb = new LocalDB path: __dirname + 'src' # more options here...
 # { EtherDB } = require './src/EtherDB'
@@ -33,9 +28,9 @@ multiverse = require './multiverse'
 
 # Library = new Implementation "src/Library.concept.ls"
 
-library = new LocalLibrary {multiverse},
-	protos: __dirname + '/protos'
-	path: __dirname + '/library'
+# library = new LocalLibrary {multiverse},
+# 	protos: __dirname + '/protos'
+# 	path: __dirname + '/library'
 
 
 # return

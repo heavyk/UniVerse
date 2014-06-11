@@ -11,6 +11,7 @@
   ],
   "bugs": "http://github.com/duralog/Blueshift/issues",
   "dependencies": {
+    "bindings": "~1.2.0",
     "GridFS": "~0.3.0",
     "backoff": "~2.3.0",
     "base58-native": "~0.1.4",

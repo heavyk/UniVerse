@@ -355,13 +355,15 @@ default_langs =\
 				res.output = res.ast.compileRoot options
 				if res.result or true
 					# console.log "run", res.output
+					global._ = require \lodash
+					# TODO: this is really ugly... make sure to use vm.createContext
 					CWD = process.cwd!
 					process.chdir Path.dirname res.path
 					res.output = LiveScript.run res.output, options, true
 					process.chdir CWD
 
-				@emit \compile:success, res
 				@impl = res.output
+				@emit \compile:success, res
 			catch e
 				@emit \compile:failure, e
 				if ~e.message.indexOf 'Parse error'
@@ -396,17 +398,25 @@ class Implementation extends Fsm # Reality
 	# idea: \Implementation
 	# embodies:
 	# 	\Growler
-	(opts) ->
-		if typeof opts is \string
-			opts = {path: opts}
-		else if typeof opts.path isnt \string
+	(uV, path) ->
+		if typeof uV isnt \object # and DaFunk.stringify(env) isnt \
+			throw new Error "you must have an origin ambiente"
+
+		impl = {}
+		if typeof path is \object
+			impl = path
+			path = \inline
+		else if typeof path is \string
+			opts = {path}
+		else
 			throw new Error "you must define a path for your Implementation"
 
-		@impl = {}
+		@origin = [uV]
+		@impl = impl
 		@_impls = []
 		@src = ''
 
-		super "Implementation(#{opts.path})", opts
+		super "Implementation(#{path})", opts
 
 
 	watch: 100
@@ -419,17 +429,15 @@ class Implementation extends Fsm # Reality
 			self._impls.push impl
 
 		machina = @impl.machina
+		# TODO: instead of using eval, use vm.runInContext
 		eval """
 		(function(){
 			var #{idea} = idea_constructor = (function(superclass){
 				var prototype = extend$((import$(#{idea}, superclass).displayName = '#{idea}', #{idea}), superclass).prototype, constructor = #{idea};
 				function #{idea} (refs, opts) {
-					//console.log("creating '#idea'...", this.displayName)
 					if(!(this instanceof #{idea})) return new #{idea}(key, opts);
-					//#{if @type is \Cardinal then 'DaFunk.extend(this, Tone);' else ''}
-					//#{if @type is \Mutable then 'DaFunk.extend(this, Timing);' else ''}
-					//#{if @type is \Fixed then 'DaFunk.extend(this, Symbolic);' else ''}
 					this.refs = refs;
+					this.origin = self.origin.concat(this);
 					#{idea}.superclass.call(this, impl, opts);
 					new_impl(this);
 				}
@@ -507,6 +515,7 @@ class Implementation extends Fsm # Reality
 
 	cmds:
 		read: (path) ->
+			@debug "read:", path
 			if typeof path is \undefined
 				path = @path
 			if typeof path isnt \string
@@ -516,6 +525,7 @@ class Implementation extends Fsm # Reality
 				@watcher = null
 			if ms = @watch and not @watcher
 				@watcher = Fs.watchFile path, {interval: ms} (st1, st2) ~>
+					@debug "disturbance @ '#path'"
 					@exec \read path
 
 

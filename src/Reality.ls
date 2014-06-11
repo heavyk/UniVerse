@@ -58,7 +58,7 @@ class Reality extends Fsm
 			_.each modifier, @embody, this
 
 		# TODO: super impl.name, impl.id, opts
-		super impl.name, impl.id, opts
+		super impl.name || impl.idea, opts
 		@_dep_done!
 
 	_dep_done: (dep) ->
@@ -74,18 +74,14 @@ class Reality extends Fsm
 	initialize: ->
 		self = this
 		if locals = @_impl.local
-			# for where, uri of locals
 			_.each locals, (uri, where) ~>
 				@_deps.push uri
-				@refs.library.exec \get uri, (err, res) ~>
-
+				@origin.0.library.exec \get uri, (err, res) ~>
 					if err
 						@debug.error ''+err.stack
 					else
 						ToolShed.set_obj_path where, self, res
 						@_dep_done uri
-
-
 
 	eventListeners:
 		'load:node': (what, where, obj) ->
