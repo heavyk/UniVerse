@@ -1,0 +1,3 @@
+#!/usr/bin/env node --harmony
+
+require(require('path').join(__dirname, '../verse'))

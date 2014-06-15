@@ -1,12 +1,19 @@
+# TODO: Library.proto = \library
+
 idea: \MultiVerse
 version: \0.1.0
-type: \Abstract
+type: \Cardinal
 description: "the origin of the UniVerse"
-concept:
-	UniVerse:					\concept://UniVerse
+# proto: \ether
+# concept: \universe
+library:
+	UniVerse:
+		\concept://UniVerse
 local:
-	ToolShed:					\npm://MachineShop.ToolShed
-	Config:						\npm://MachineShop.Config
+	ToolShed:
+		\npm://MachineShop.ToolShed
+	Config:
+		\npm://MachineShop.Config
 embodies:
 	* \Idea
 	* \Verse

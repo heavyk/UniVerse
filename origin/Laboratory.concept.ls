@@ -6,12 +6,18 @@ concept:
 	Project:					\concept://Project
 	Library:					\concept://Library
 local:
-	Fs:								\node://fs
-	Path:							\node://path
-	Walk:							\npm://walkdir
-	MachineShop:			\npm://MachineShop
-	ToolShed:					\npm://MachineShop.ToolShed
-	Config:						\npm://MachineShop.Config
+	'Fs':
+		\node://fs
+	'Path':
+		\node://path
+	'Walk':
+		\npm://walkdir
+	# 'MachineShop':
+	# 	\npm://MachineShop
+	'{ToolShed,Config}':
+		\npm://MachineShop
+	'Config':
+		\npm://MachineShop.Config
 # poetry:
 # 	Word:
 # 		Technician:			\latest
