@@ -11,6 +11,18 @@ effortless:
 		"node": "0.10.28"
 		"atom-shell": "0.13.0"
 
+UniVerse:
+	name: \UniVerse
+	version: \0.1.0
+	description: "communicate your ideas easily with poem and verse"
+	motd:
+		* "we're all singing the same song anyway"
+	bundle:
+		node:
+			* \0.11.13
+			* \0.10.28
+		dependencies:
+			"prompt": "0.2.13"
 sencillo:
 	name: "sencillo"
 	version: "0.1.0"
@@ -45,6 +57,8 @@ sencillo:
 			upstream: "github://heavyk/MachineShop"
 			revision: "master"
 
+		"lib/node_modules/mime":
+			upstream: "github://broofa/node-mime"
 		"lib/node_modules/deep-is":
 			upstream: "github://thlorenz/deep-is"
 		"lib/node_modules/fast-levenshtein":

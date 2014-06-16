@@ -20,7 +20,6 @@ LSAst = require \livescript/lib/ast
 
 class Reality extends Fsm
 	embody: (concept) ->
-		console.log "embody", concept
 		DaFunk.extend this, Reality.modifiers[concept]
 
 		# add: (more) ->
@@ -52,10 +51,11 @@ class Reality extends Fsm
 		@initialState = false
 
 		@_deps = []
-		if @_impl and typeof (modifier = @_impl.embodies) is \string
-			@embody modifier
-		else if Array.isArray modifier
-			_.each modifier, @embody, this
+		if @_impl
+			if typeof (modifier = @_impl.embodies) is \string
+				@embody modifier
+			else if Array.isArray modifier
+				_.each modifier, @embody, this
 
 		# TODO: super impl.name, impl.id, opts
 		super impl.name || impl.idea, opts
@@ -123,7 +123,7 @@ class Reality extends Fsm
 
 Reality.modifiers =
 	Idea:
-		'and|initialize': ->
+		'also|initialize': ->
 			if concepts = @_impl.concept
 				if typeof @concept isnt \object
 					@concept = {}
@@ -173,7 +173,7 @@ Reality.modifiers =
 				console.log "#{prompt} PROMPT:", txt, data
 
 	Verse:
-		'and|initialize': ->
+		'also|initialize': ->
 			@_verse = []
 			console.log "INIT"
 
@@ -210,8 +210,7 @@ Reality.modifiers =
 				#TODO: update (id, diff)
 
 	Form:
-		'and|initialize': (key) ->
-
+		'also|initialize': (key) ->
 			if not @refs.memory
 				throw new Error "for an something to take Form, it must have access to memory"
 

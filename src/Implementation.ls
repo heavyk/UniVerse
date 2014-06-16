@@ -8,7 +8,7 @@ Path = require \path
 DeepDiff = require \deep-diff
 
 /*
-'and|initialize': (key) ->
+'also|initialize': (key) ->
 
 			if not @refs.memory
 				throw new Error "for an something to take Form, it must have access to memory"
@@ -362,7 +362,7 @@ default_langs =\
 					res.output = LiveScript.run res.output, options, true
 					process.chdir CWD
 
-				@impl = res.output
+				@_impl = res.output
 				@emit \compile:success, res
 			catch e
 				@emit \compile:failure, e
@@ -371,27 +371,58 @@ default_langs =\
 				else
 					console.log @path, ':', e.stack
 
-			stringify: ->
-				try
-					output = DaFunk.stringify @impl, <[name encantador incantation version embodies concepts eventListeners layout]>
-					@emit @lang, @outfile, output
-					if @outfile
-						Fs.writeFile @outfile, output, (err) ~>
-							if err
-								@emit \error, new Error "unable to write output to #{@outfile}"
-								@transition \error
-							else
-								@debug "wrote %s", @outfile
-								@emit \success message: "compiled: '#{@outfile}' successfully"
-								@transition \ready
-					# else
-					# 	@transition \ready
-				catch e
-					if ~e.message.indexOf 'Parse error'
-						console.log @path, ':', e.message
-					else
-						console.log @path, ':', e.stack
-					@emit \stringify:error, e
+		stringify: ->
+			try
+				output = DaFunk.stringify @_impl, <[name encantador incantation version embodies concepts eventListeners layout]>
+				@emit @lang, @outfile, output
+				if @outfile
+					Fs.writeFile @outfile, output, (err) ~>
+						if err
+							@emit \error, new Error "unable to write output to #{@outfile}"
+							@transition \error
+						else
+							@debug "wrote %s", @outfile
+							@emit \success message: "compiled: '#{@outfile}' successfully"
+							@transition \ready
+				# else
+				# 	@transition \ready
+			catch e
+				if ~e.message.indexOf 'Parse error'
+					console.log @path, ':', e.message
+				else
+					console.log @path, ':', e.stack
+				@emit \stringify:error, e
+
+			return output
+
+class Shell extends Fsm # Reality
+	impl:
+		idea: \Shell
+
+	# (origin, opts) ->
+	(impl, opts) ->
+		@instance = []
+		console.log "hello, I am a shell"
+		console.log "origin", @origin
+		super ...
+
+	states:
+		uninitialized:
+			onenter: ->
+				console.log "so, I'm uninitialized now.. we've got to wait for the instance to become ready"
+				@once \add:instance ~>
+					@transition \ready
+
+		ready:
+			onenter: ->
+				console.log "yay, we're ready to function now..."
+
+	cmds:
+		spawn: ->
+			console.log "spawning..."
+			uV = @origin.0
+			uV
+
 
 
 class Implementation extends Fsm # Reality
@@ -399,8 +430,11 @@ class Implementation extends Fsm # Reality
 	# embodies:
 	# 	\Growler
 	(uV, path) ->
-		if typeof uV isnt \object # and DaFunk.stringify(env) isnt \
-			throw new Error "you must have an origin ambiente"
+		if typeof uV is \string
+			path = uV
+
+		# if typeof uV isnt \object # and DaFunk.stringify(env) isnt \
+		# 	throw new Error "you must have an origin ambiente"
 
 		impl = {}
 		if typeof path is \object
@@ -412,41 +446,59 @@ class Implementation extends Fsm # Reality
 			throw new Error "you must define a path for your Implementation"
 
 		@origin = [uV]
-		@impl = impl
-		@_impls = []
+		@_impl = impl
+		@_instances = []
 		@src = ''
 
 		super "Implementation(#{path})", opts
 
-
 	watch: 100
-
+	stringify: ->
+		if lang = default_langs[@lang]
+			lang.stringify ...
+		else
+			throw new Error "not yet possible. add more langs"
 	imbue: (essence) ->
-		idea = (impl = @impl).idea
+		idea = (impl = @_impl).idea
 		@debug.todo "save the imbued"
 		self = this
-		new_impl = (impl) ->
-			self._impls.push impl
+		new_inst = (inst) ->
+			self._instances.push inst
+			inst.once \state:destroyed ->
+				(ii = self._instances).splice (ii.indexOf inst), 1
 
-		machina = @impl.machina
+		machina = @_impl.machina
+		# if typeof (init = machina.initialize) is \function and typeof essence.initialize
+		# 	delete
 		# TODO: instead of using eval, use vm.runInContext
-		eval """
-		(function(){
-			var #{idea} = idea_constructor = (function(superclass){
-				var prototype = extend$((import$(#{idea}, superclass).displayName = '#{idea}', #{idea}), superclass).prototype, constructor = #{idea};
-				function #{idea} (refs, opts) {
-					if(!(this instanceof #{idea})) return new #{idea}(key, opts);
-					this.refs = refs;
-					this.origin = self.origin.concat(this);
-					#{idea}.superclass.call(this, impl, opts);
-					new_impl(this);
-				}
-				DaFunk.extend(prototype, machina);
-				return #{idea};
-			}(essence));
-		}())
-		"""
-		return idea_constructor
+		# console.log "origin", @origin.length
+		if uV = @origin.0
+			console.log "yay, we have an origin", uV.namespace
+			uV.exec \connect self
+			# uV.exec \create self
+			# throw new Error "TODO: uV.create"
+
+
+		unless idea_constructor = @_constructor
+			eval """
+			(function(){
+				var #{idea} = idea_constructor = (function(superclass){
+					var prototype = extend$((DaFunk.extend(#{idea}, superclass).displayName = '#{idea}', #{idea}), superclass).prototype, constructor = #{idea};
+					function #{idea} (refs, opts) {
+						if(!(this instanceof #{idea})) return new #{idea}(key, opts);
+						this.refs = refs;
+						this.origin = self.origin.concat(this);
+						//if(self.origin[0].namespace.substr(0,3) === "Uni")
+
+						#{idea}.superclass.call(this, impl, opts);
+						new_inst(this);
+					}
+					DaFunk.extend(prototype, machina);
+					return #{idea};
+				}(essence));
+			}())
+			"""
+		return @_constructor = idea_constructor
 	states:
 		uninitialized:
 			onenter: ->
@@ -455,7 +507,7 @@ class Implementation extends Fsm # Reality
 				@on \compile:success, (res) ->
 					#TODO: update reality
 
-					_.each @_impls, (impl) ->
+					_.each @_instances, (impl) ->
 						lhs = impl._impl
 						rhs = res.output
 						d = DeepDiff.observableDiff lhs, rhs, (d) ->
@@ -464,6 +516,7 @@ class Implementation extends Fsm # Reality
 								if typeof d.lhs is \function and typeof d.rhs is \function
 									if d.lhs.toString! is d.rhs.toString!
 										return
+							console.log "change d:", d
 							DeepDiff.applyChange lhs, rhs, d
 							switch d.path.0
 							| \local =>
@@ -472,17 +525,19 @@ class Implementation extends Fsm # Reality
 								d.path.shift!
 								# console.log "applying:", d
 								DeepDiff.applyChange impl, rhs.machina, d
+					# _.each @_instances
+					# 	DeepDiff.applyChange impl, rhs.machina, d
 
 				@once \executed:compile -> @transition \ready
 				@exec \read @path
 
 		ready:
 			onenter: ->
-				@emit \ready @impl, @src
+				@emit \ready @_impl, @src
 
 			save:
 				onenter: ->
-					obj = @impl
+					obj = @_impl
 					json_str = if opts.ugly => JSON.stringify obj else DaFunk.stringify obj, DaFunk.stringify.desired_order path
 					if json_str isnt @src
 						path = @path
@@ -516,6 +571,7 @@ class Implementation extends Fsm # Reality
 	cmds:
 		read: (path) ->
 			@debug "read:", path
+			console.log "read:", path
 			if typeof path is \undefined
 				path = @path
 			if typeof path isnt \string
@@ -529,7 +585,9 @@ class Implementation extends Fsm # Reality
 					@exec \read path
 
 
+			console.log "readFile", path
 			Fs.readFile path, 'utf-8', (err, data) ~>
+				console.log "readFile", err
 				is_new = false
 				if err
 					if err.code is \ENOENT

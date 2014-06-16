@@ -50,6 +50,10 @@ MULTIVERSE = require '../multiverse'
 
 var AMBIENTE_ID, AMBIENTE_PATH, AMBIENTE_JSON, AMBIENTE_LIB_PATH, AMBIENTE_SRC_PATH, AMBIENTE_BIN_PATH, AMBIENTE_MODULES_PATH
 var TARGET_UNIVERSE
+VERSE_PATH = Path.join SOURCE_PATH, ".verse"
+VERSE_CONFIG_PATH = Path.join VERSE_PATH, \config.json
+VERSE_PKG_JSON_PATH = Path.join VERSE_PATH, \package.json
+
 set_uV_paths = (id) ->
 	# TODO: make this a getter/setter on the global object
 	AMBIENTE_ID := id
@@ -68,6 +72,191 @@ Object.defineProperty exports, "AMBIENTE_LIB_JSON", get: -> AMBIENTE_LIB_JSON
 Object.defineProperty exports, "AMBIENTE_LIB_PATH", get: -> AMBIENTE_LIB_PATH
 Object.defineProperty exports, "AMBIENTE_SRC_PATH", get: -> AMBIENTE_SRC_PATH
 Object.defineProperty exports, "AMBIENTE_BIN_PATH", get: -> AMBIENTE_BIN_PATH
+
+VERSE_ID = process.env.VERSE_ID || 'shell'
+VERSE_MODE = if VERSE_ID is \shell then 'client' else 'server'
+uV_debug = "Verse(#{VERSE_ID})"
+
+# TODO: prompting
+# if VERSE_ID is \shell
+# 	Prompt = require \prompt
+# 	Prompt.message = ''
+# 	Prompt.delimiter = ''
+# 	Amaze = require './amaze' .Amaze
+
+scope = {
+	lala: 1234
+	jaja: 1155
+	mmmm: 1111
+}
+
+class Verse extends Fsm
+	(amb, impl) ->
+		if (impl.namespace.indexOf \Implementation) isnt 0
+			throw new Error "you gatta have an Implementation"
+		@ambiente = (@origin = [new Ambiente \UniVerse]).0
+		console.log "welcome to Verse "
+
+	eventListeners:
+		connected: (uri) ->
+			#@connected = uri
+			debug "we're connected... %s", VERSE_MODE
+			#if @amaze then @amaze.prompt!
+		disconnected: ->
+			#@connected = false
+			#if @amaze then @amaze.prompt!
+	states:
+		uninitialized:
+			onenter: ->
+				task = @task 'Load Verse(main)'
+				task.choke (done) -> ToolShed.mkdir VERSE_PATH, done
+				unless @ambiente.initialzed
+					task.push "wait for ambiente", (done) ~>
+						@ambiente.on \state:ready, done
+				task.push "load Verse config", (done) ->
+					debug "loading gobal config: %s", VERSE_CONFIG_PATH
+					cfg = Config VERSE_CONFIG_PATH
+					cfg.on \ready (obj) ->
+						if typeof obj.verses is \undefined
+							obj.verses = {}
+						Verse.CONFIG = obj
+						# debug "Verse.CONFIG loaded.. verses:"
+						# _.each Verse.CONFIG.verses, (v, id) ->
+						# 	debug "%s::%O", id, v
+						done!
+				task.end (err, res) ~>
+					if err then @error "unable to load Verse!"
+					else
+						if process.send and VERSE_ID isnt \shell
+							@transition \server
+						else
+							@transition \main
+							#@transition \connecting
+	cmds:
+		connect: (id) ->
+			debug "connect (%s)", id
+			if v = Verse.get id
+				# for now, we're just going to assume everything is local (use pipes)
+				#TODO: make this into a function to ignore these errors
+				uri = Path.join VERSES_DIR, v.id, '.verse', 'pipe'
+			debug "Verse(#{id}) has uri: #{uri}"
+			#prolly going to want to parse the url
+			if client = @client[id]
+				@emit \already_connecting, id
+			else
+				@client[uri] = true
+				client = Dnode {
+					set_scope: (scope_name, prop, val) ->
+						if typeof s = Scope._[scope_name] is \object
+							(new Function "s,val", "s.#{prop} = val;").call null, Scope._[id], val
+				}
+				client.uri = uri
+				client.id = id
+				client.on \remote (r) ~>
+					debug "CLIENT: got remote"
+					verse.remote = r
+					@client[id] = client
+					@emit "connected:#{id}"
+					@emit \sync_scope, id
+				client.on \end ~>
+					debug "client connection ended"
+					@transition \connecting
+				client.on \fail ~>
+					@client[id] = false
+					debug "connect failed to %s", uri
+					debug "client connect failed"
+				client.on \error (ex) ~>
+					@client[id] = false
+					debug "client.error %s", ex.code
+					if ex.code is \ENOENT
+						@emit \spawn_server id
+						setTimeout ->
+							client.connect path: uri#, reconnect: 100
+						, 1000
+					else if ex.code is \ECONNREFUSED
+						Fs.unlink uri, (err) ~>
+							@emit \spawn_server id
+					else
+						debug "client connect error %s %s", ex.code, ex.stack
+						@emit "connect_error:#{id}"
+
+				debug "attempting to connect to %s", uri
+				client.connect path: uri#, reconnect: 100
+
+		sync_scope: (scope_name) ->
+			debug "syncing scope #{scope_name} in connected #{VERSE_MODE} and state #{@state}"
+			if VERSE_MODE isnt \server
+				@remote.get_scope scope_name, (res) ~>
+					dyn_scope = Scope scope_name, res
+					if @amaze then @amaze.set_scope scope_name, dyn_scope
+					debug "amaze = %s", typeof @amaze
+					debug "setting 'set' event on dyn_scope"
+					debug "got scope %s :: %O :: %O", scope_name, dyn_scope, res
+					dyn_scope.on \set (prop, val) ~>
+						@remote.set_scope scope_name, prop, val
+					@emit "synced:#{scope_name}", dyn_scope
+					@emit "synced", scope_name
+			else
+				throw new Error "you have an error somewhere. server shouldn't be syncing it's scope... duh"
+
+		spawn_server: (id) ->
+			debug "spawning server with #id"
+			ForeverMonitor = require \forever-monitor .Monitor
+			debug "spawning server with stdin: %s ", typeof process.stdin.on
+
+			child = new ForeverMonitor __filename,
+				command: Path.join \bin, \verse # get the universes' node processs
+				silent: false,
+				minUptime: 2000,
+				max: 1,
+				fork: true,
+				options: ['--harmony-collections', '--harmony-proxies'] #, 'hymnbook'
+				cwd: Path.resolve __dirname, \..
+				stdio: ['pipe', 'pipe', 'pipe', 'ipc']
+				env:
+					VERSE_ID: id
+				spawnWith:
+					detached: true
+				pidFile: Path.join VERSES_DIR, id, '.verse', 'pid'
+				#kill-tree: false
+
+			debug "spawn_server child: %s %s", typeof child, typeof child.on
+			child.on \error ->
+				debug "spawn error %O", &
+
+			child.on \exit (code) ->
+				debug "server(#id): exited with code (%s)", code
+
+			child.on \restart (err, data) ->
+				debug "restarted #id w/ args %O", &
+
+			child.on \start (err, data) ->
+				debug "started #id w/ args %O", &
+
+			debug "saving service into: %s", id
+			verse.services[id] = child
+			var closing_tt
+			child.on \message (msg) ->
+				#debug "got message:%s data:%O", msg.type, msg
+				switch msg.type
+				#| \status =>
+				#	debug "an unused status message"
+				| \listening =>
+					verse.emit \connect, id
+
+			#IMPROVEMENT: check the contents of the pid file aed send it a kill signal if it exists, then respawn
+			child.start true
+			setInterval ->
+				#debug "going to ping if running %s", child.running
+				if child.running
+					child.child.send "ping"
+			, 1000
+
+# if VERSE_ID is \shell
+# 	Prompt = require \prompt
+# 	Prompt.message = ''
+# 	Prompt.delimiter = ''
+# 	Amaze = require './amaze' .Amaze
 
 
 # facilmente is the default universe
@@ -103,6 +292,490 @@ global.ARCH = ARCH = switch process.arch
 #  -> UniVerse.modules.mymodule['4.3.x'] (does magic to get that module)
 #    -> _.each module.versions, (mod, v) ->
 
+# class Verse extends Fsm
+# 	# Verse is a singleton, so we can do this:
+# 	self = {}
+# 	self._id = void
+# 	missing = []
+# 	cmd_order = []
+# 	commands = {}
+# 	aliases = {}
+# 	demanded = {}
+# 	checks = []
+# 	transforms = {}
+# 	name = 'unnamed'
+# 	version = '0.0.0'
+# 	defaults = {}
+# 	descriptions = {}
+# 	description = ''
+# 	usage = void
+# 	wrap = null
+
+# 	flags = {
+# 		bools: {}
+# 		strings: {}
+# 	}
+
+# 	(default_args, is_command = false) ->
+# 		# self = this
+# 		@@id := (id) ->
+# 			if id isnt \shell
+# 				id = Uuid.unparse Uuid.parse id
+# 			Verse._id = id
+# 			self
+# 		if typeof default_args is \string
+# 			#debug "loading verse with default args %s", default_args
+
+# 			verse.exec \load default_args
+# 			self.id default_args
+# 			if id = process.env.VERSE_ID
+# 				#verse.transition \hymbook
+# 				if ~id.indexOf ','
+# 					_.each id.split(','), (id) ->
+# 						verse.exec \initialize id
+# 				else
+# 					verse.exec \initialize id
+# 			if typeof inst is \object then return inst
+# 			if process.send
+# 				debug "WE GOT A VERSE_PIPE spawn"
+
+# 		fail = (msg) ->
+# 			self.showHelp!
+# 			if msg then console.error msg
+# 			if typeof process is \object
+# 				process.exit 0
+# 			else if typeof thread is \object
+# 				thread.emit \err msg
+# 		parseArgs = (args = []) ->
+# 			if Array.isArray self._args and not args.length then args = self._args ++ args
+# 			else args || []
+# 			argv = {
+# 				_: []
+# 				self.$0
+# 			}
+# 			setArg = (key, val) ->
+# 				#console.error "setArg", is_command, key, val#, argv
+# 				num = Number val
+# 				value = if typeof val isnt \string or isNaN num then val else num
+# 				value = val if flags.strings[key]
+# 				if val is true
+# 					if typeof defaults[key] is not \undefined then value = defaults[key]
+# 					if typeof defaults[key] is true then value = false
+# 				if a = aliases[key]
+# 					for k in a
+# 						if val is true
+# 							if typeof defaults[k] is not \undefined then value = defaults[k]
+# 							if defaults[k] is true then value = false
+# 						if t = transforms[k] then value = t value
+# 				else if t = transforms[key] then value = t value
+# 				if is_command is false or true
+# 					setKey argv, (key.split '.'), value
+# 					if a = aliases[key] then for k in a then argv[k] = argv[key]
+# 				else
+# 					setKey argv.cmd, (key.split '.'), value
+# 					if a = aliases[key] then for k in a then argv.cmd[k] = argv.cmd[key]
+
+# 			for key, v of flags.bools
+# 				setArg key, defaults[key] || false
+
+# 			i = 0
+# 			while i < args.length
+# 				arg = args[i]
+# 				if arg is '--'
+# 					argv._.push.apply argv._, args.slice i + 1
+# 					break
+# 				else
+# 					if arg.match /^--.+=/
+# 						m = arg.match /^--([^=]+)=(.*)/
+# 						setArg m.1, m.2
+# 					else if arg.match /^--no-.+/
+# 						key = (arg.match /^--no-(.+)/).1
+# 						setArg key, false
+# 					else if arg.match /^--.+/
+# 						key = (arg.match /^--(.+)/).1
+# 						next = args[i + 1]
+# 						if typeof next isnt \undefined and not next.match /^-/ and not flags.bools[key] and (if aliases[key] then not flags.bools[aliases[key]] else true)
+# 							setArg key, next
+# 							i++
+# 						else
+# 							if /^(true|false)$/.test next
+# 								setArg key, next is 'true'
+# 								i++
+# 							else
+# 								if demanded[key] then missing.push key
+# 								else setArg key, true
+# 					else
+# 						if arg.match /^-[^-]+/
+# 							letters = (arg.slice 1, -1).split ''
+# 							broken = false
+# 							j = 0
+# 							while j < letters.length
+# 								if letters[j + 1] and letters[j + 1].match /\W/
+# 									setArg letters[j], arg.slice j + 2
+# 									broken = true
+# 									break
+# 								else
+# 									setArg letters[j], true
+# 								j++
+# 							if not broken
+# 								key = (arg.slice -1).0
+# 								if args[i + 1] and not args[i + 1].match /^-/ and not flags.bools[key] and (if aliases[key] then not flags.bools[aliases[key]] else true)
+# 									setArg key, args[i + 1]
+# 									i++
+# 								else
+# 									if args[i + 1] and /true|false/.test args[i + 1]
+# 										setArg key, args[i + 1] is 'true'
+# 										i++
+# 									else
+# 										setArg key, true
+# 						else
+# 							n = Number arg
+# 							v = if flags.strings._ || isNaN n then arg else n
+# 							argv._.push v
+# 							if is_command is false and cmd_order.length and argv._.length and cc = commands[argv._.0]
+# 								argv.cmd = cc.parse.call cc, args.slice i+1
+# 								break
+# 				i++
+# 			for key, def of defaults
+# 				if key not of argv and (key of demanded or key not of flags.strings)
+# 					argv[key] = def
+# 					argv[aliases[key]] = defaults[key] if key of aliases
+# 			if demanded._ and argv._.length < demanded._
+# 				fail 'Not enough non-option arguments: got ' + argv._.length + ', need at least ' + demanded._
+# 			for key, v of demanded
+# 				if typeof v is not \number and not argv[key]
+# 					missing.push key
+# 			if missing.length then fail 'Missing required arguments: ' + missing.join ', '
+# 			checks.forEach ((f) ->
+# 				try
+# 					fail 'Argument check failed: ' + f.toString! if (f argv) is false
+# 				catch err
+# 					fail err)
+# 			argv
+# 		longest = (xs) -> Math.max.apply null, xs.map ((x) -> x.length)
+# 		load_config = ->
+# 		self.$0 = ((process.argv.slice 0, 2).map ((x) ->
+# 			b = rebase process.cwd!, x
+# 			if (x.match /^\//) && b.length < x.length then b else x)).join ' '
+# 		if process.argv.1 is process.env._
+# 			self.$0 = process.env._.replace (Path.dirname process.execPath) + '/', ''
+# 		self.boolean = (bools) ->
+# 			bools = [].slice.call arguments if not Array.isArray bools
+# 			for name in bools
+# 				flags.bools[name] = true
+# 			self
+# 		self.string = (strings) ->
+# 			strings = [].slice.call arguments if not Array.isArray strings
+# 			for name in strings then flags.strings[name] = true
+# 			delete flags.bools[name]
+# 			self
+# 		self.terminal = (fn) ->
+# 			verse.once \synced ->
+# 				verse.exec \terminal fn
+# 			self
+# 		self.alias = (x, y) ->
+# 			if typeof x is \object
+# 				for key, val of x then self.alias key, val
+# 			else
+# 				if Array.isArray y
+# 					for yy in y then self.alias x, yy
+# 				else
+# 					zs = ((aliases[x] || []).concat aliases[y] || []).concat x, y
+# 					aliases[x] = zs.filter (z) -> z isnt x
+# 					aliases[y] = zs.filter (z) -> z isnt y
+# 			self
+# 		self.demand = (keys) ->
+# 			if typeof keys is 'number'
+# 				demanded._ = 0 if not demanded._
+# 				demanded._ += keys
+# 			else
+# 				if Array.isArray keys
+# 					for key in keys then self.demand key
+# 				else demanded[keys] = true
+# 			self
+# 		self.usage = (msg, opts) ->
+# 			if not opts and typeof msg is \object
+# 				opts = msg
+# 				msg = null
+# 			usage := msg
+# 			if opts then self.options opts
+# 			self
+# 		self.check = (f) ->
+# 			checks.push f
+# 			self
+# 		self.transform = (key, fn) ->
+# 			transforms[key] = fn
+# 			self
+# 		self.default = (key, value) ->
+# 			if typeof key is \object
+# 				for k, v of key then self.default k, v
+# 			else defaults[key] = value
+# 			self
+# 		self.describe = (key, desc) ->
+# 			if typeof key is \object
+# 				for k, v of keys then self.describe k, v
+# 			else descriptions[key] = desc
+# 			self
+# 		self.description = (desc) ->
+# 			description := desc
+# 			self
+# 		self.action = (fn) ->
+# 			if is_command then self._action = fn
+# 			else Verse._action = fn
+# 			self
+# 		self.autocomplete = (fn) ->
+# 			if is_command then self._autocomplete = fn
+# 			else Verse._autocomplete = fn
+# 			self
+# 		self.fsm = (fsm) ->
+# 			if is_command then throw new Error "for now, commands cannot have fsm's -- yet"
+# 			else Verse._fsm = fsm
+# 			self
+# 		self.init = (fn) ->
+# 			if is_command
+# 				#self._init = fn
+# 				throw new Error "command initialization not yet supported"
+# 			else Verse._init = fn
+# 			self
+# 		self.name = (name) ->
+# 			debug "loading verse with name: %s", name
+# 			Verse._name = name
+# 			verse.exec \load name
+# 			self
+# 		self.version = (v) ->
+# 			if is_command then self._version = v
+# 			else Verse._version = v
+# 			self
+# 		self.schema = (s) ->
+# 			Verse.emit \todo, "implement schemas"
+# 			if is_command then self._schema = v
+# 			else Verse._schema = v
+# 			self
+# 		self.timeout = (ms, fn) ->
+# 			self._timeout = ms
+# 			self._timeout_fn = fn
+# 			Verse.emit \todo, "Verse.timeout(ms, fn) not yet implemented... make a pull request and help a brother out"
+# 			self
+# 		self.parse = (args, cb) ->
+# 			debug "parse args: %O %s", args, !!is_command
+# 			argv = parseArgs args
+# 			debug "parsed argv (main:%s)", is_command is false
+# 			if typeof cb is \function
+# 				switch argv._.length is 1 and argv._.0
+# 				| \version => cb Verse._version
+# 				| \help =>
+# 					debug "calling self.help %s %s" self.help!, cb
+# 					cb self.help!
+# 				| \quit => process.exit 0 # maybe this is a bit too abrupt :) perhaps a nice shutdown
+# 				| otherwise => verse.exec \parse is_command, argv, cb
+# 			argv
+# 		self.option = self.options = (key, opt, transform_fn, defaultVal) ->
+# 			if typeof key is \object
+# 				(Object.keys key).forEach (k) -> self.option k, key[k]
+# 			else
+# 				if typeof opt is \string then opt = {describe: opt}
+# 				else if typeof opt isnt \object then opt = {}
+# 				if typeof transform_fn is \function then opt.transform = transform_fn
+# 				else if typeof defaultVal is \undefined then defaultVal = transform_fn
+# 				if ~key.indexOf '-no-'
+# 					opt.default = true
+# 				if ~key.indexOf '['
+# 					opt.default = defaultVal or true
+# 					delete opt.boolean
+# 				else if ~key.indexOf '<'
+# 					if typeof defaultVal isnt \undefined
+# 						opt.default = defaultVal
+# 					else opt.string = true
+# 					opt.demand = 1
+# 					delete opt.boolean
+# 				else if typeof defaultVal isnt \undefined and typeof defaultVal isnt \boolean
+# 					opt.default = defaultVal
+# 					opt.string = true
+# 				else opt.boolean = true
+# 				key = key.split /[ ,|]+/
+# 				if key.length > 1 and not /^[[<]/.test key.1
+# 					opt.alias = key.shift! .replace /^-/, ''
+# 				key = key.shift!replace '--', '' .replace 'no-', ''
+# 				if key.indexOf '-' isnt -1 then key = camelcase key
+# 				# ----
+# 				if opt.alias then self.alias key, opt.alias
+# 				if typeof opt.demand is \number then demanded[key] = opt.demand
+# 				else if opt.demand then self.demand key
+# 				if typeof opt.default isnt \undefined then self.default key, opt.default
+# 				if opt.boolean or opt.type is \boolean then self.boolean key
+# 				if opt.string or opt.type is \string then self.string key
+# 				if typeof opt.transform is \function then self.transform key, opt.transform
+# 				if desc = opt.describe or opt.description or opt.desc then self.describe key, desc
+# 			self
+# 		self.command = (cmd) ->
+# 			#Verse.emit \todo, "rip off the commander command parser -- so that 'location <location>' works"
+# 			#TODO: verify the command exists
+# 			cmds = cmd.split RegExp ' +'
+# 			c = cmds.shift!
+# 			commands[c] = _argv = new Verse false, self
+# 			cmd_order.push c
+# 			_argv.signature = cmd
+# 			_argv
+# 		self.dependncy = (pkg, version) ->
+# 			#TODO: add a npm dependency
+# 			v = Verse._dependncies[pkg]
+# 			if is_command
+# 				# it should lazy load the dependency, if the dep is only used by a command
+# 				if typeof v is \undefined
+# 					self.emit \dep pkg, version
+# 				else
+# 					debug "this dependency already exists!"
+# 					#TODO: add a semver check to the universe
+# 			else
+# 				if typeof v is \undefined
+# 					Verse._dependncies[pkg] = version
+# 				else
+# 					debug "dependency conflict! #{v} vs. requested: #{version}"
+# 					#TODO: add a semver check to the universe to see if it's the latest
+# 					#  else prompt to see if we wanna upgrade
+# 			self
+# 		self.use = (service, opts = {}) ->
+# 			#TODO: save the service, and make sure to launch it before loading is done
+# 			svc = Verse._service[service]
+# 			if not ~Verse.AVAILABLE_SERVICES.indexOf service
+# 				debug "unknown service: #{service}"
+# 			if is_command
+# 				# it should lazy load the dependency, if the dep is only used by a command
+# 				if typeof svc is \undefined
+# 					self.emit \load_service service, opts
+# 				else
+# 					debug "this dependency already exists!"
+# 					#TODO: add a semver check to the universe
+# 			else
+# 				if typeof svc is \undefined
+# 					Verse._service[pkg] = service
+# 				else
+# 					debug "dependency conflict! #{v} vs. requested: #{version}"
+# 					#TODO: add a semver check to the universe to see if it's the latest
+# 					#  else prompt to see if we wanna upgrade
+# 			self
+# 		self.universe = (name, opts) ->
+# 			#TODO: make sure to connect to this universe
+# 			if is_command
+# 				debug "for now, commands cannot connect to a different universe. this is soon possible"
+# 				# 1. check to see if it's the same universe
+# 				# 2. if it's different and not opts.autoconnect, connect to it lazily
+# 				# 3. this is just a normal dnode connection to run the command over there
+# 				#self._universe = new UniVerse opts, refs
+# 			else
+# 				debug "TODO: make sure to connect to te universe"
+# 				Verse._universe = new UniVerse opts, refs
+# 			self
+# 		self.wrap = (cols) ->
+# 			wrap := cols
+# 			self
+# 		self.showHelp = (fn) ->
+# 			fn = console.error if not fn
+# 			fn self.help!
+# 		self.help = ->
+# 			wordwrap = require 'wordwrap'
+# 			# you can get self-help here! LOLz
+# 			if is_command isnt false
+# 				return "#description"
+# 			keys = Object.keys (((Object.keys descriptions).concat Object.keys demanded).concat Object.keys defaults).reduce ((acc, key) ->
+# 				acc[key] = true if key isnt '_'
+# 				acc), {}
+# 			help = [if usage then 'Usage: '+(usage.replace /\$0/g, VERSE_NAME) else "#{VERSE_NAME} v#{Verse._version}"]
+# 			if description.length then help.push "  #description", ''
+# 			if keys.length then help.push 'Options:'
+# 			switches = keys.reduce ((acc, key) ->
+# 				acc[key] = (([key].concat aliases[key] || []).map ((sw) -> (if sw.length > 1 then '--' else '-') + sw)).join ', '
+# 				acc), {}
+# 			switchlen = longest (Object.keys switches).map ((s) -> switches[s] || '')
+# 			desclen = longest (Object.keys descriptions).map ((d) -> descriptions[d] || '')
+# 			for key in keys
+# 				kswitch = switches[key]
+# 				desc = descriptions[key] || ''
+# 				if wrap then desc = ((wordwrap switchlen + 4, wrap) desc).slice switchlen + 4
+# 				spadding = (new Array Math.max switchlen - kswitch.length + 3, 0).join ' '
+# 				dpadding = (new Array Math.max desclen - desc.length + 1, 0).join ' '
+# 				type = null
+# 				if flags.bools[key] then type = '[boolean]'
+# 				if flags.strings[key] then type = '[string]'
+# 				if not wrap && dpadding.length > 0 then desc += dpadding
+# 				prelude = '  ' + kswitch + spadding
+# 				extra = ([
+# 					type
+# 					if demanded[key] then '[required]' else null
+# 					if typeof defaults[key] isnt \undefined then '[default: ' + defaults[key] + ']' else null
+# 				].filter Boolean).join '  '
+# 				body = ([desc, extra].filter Boolean).join '  '
+# 				if wrap
+# 					dlines = desc.split '\n'
+# 					dlen = (dlines.slice -1).0.length + if dlines.length is 1 then prelude.length else 0
+# 					body = desc + if dlen + extra.length > wrap - 2 then '\n' + (new Array wrap - extra.length + 1).join ' ' + extra else ((new Array wrap - extra.length - dlen + 1).join ' ') + extra
+# 				help.push prelude + body
+# 			help.push ''
+# 			if cmd_order.length
+# 				help.push 'Commands:'
+# 				max_len = 0
+# 				for cmd in cmd_order
+# 					max_len = Math.max commands[cmd].signature.length, max_len
+# 				wl = wordwrap max_len+8, process.stdout.columns-2
+# 				for cmd in cmd_order
+# 					sig = commands[cmd].signature
+# 					help.push "  #{sig}#{wl(commands[cmd].help!).substr sig.length+2}"
+# 					#help.push "  #{sig} #{commands[cmd].help!}"
+
+# 			help.join '\n'
+# 		Object.defineProperty self, '_cmds', {
+# 			get: -> commands
+# 		}
+# 		Object.defineProperty self, 'argv', {
+# 			get: parseArgs
+# 			enumerable: true
+# 		}
+# 		/*
+# 		Object.defineProperty self, 'scope', {
+# 			get: ->
+# 				throw new Error "could be a problem here with the scope..."
+# 				scope
+# 			enumerable: true
+# 		}
+# 		*/
+
+# 		#TODO: save the cwd, and do an import
+# 		if Array.isArray default_args then verse.on \connected ->
+# 			if VERSE_MODE is \server
+# 				args = _.filter default_args.slice(0), (arg) ->
+# 					if typeof arg is \string and not ~arg.indexOf 'fallback.js' then arg
+
+# 				debug "going to try parsing... %s", typeof inst
+# 				argv = inst.parse args
+# 				if (argv._.length is 0 and argv.version) or (argv._.length is 1 and argv._.0 is \version)
+# 					exit = Verse._version
+# 				else if (argv._.length is 0 and argv.help) or (argv._.length is 1 and argv._.0 is \help)
+# 					exit = Verse.help!
+# 				else if argv.cmd and (argv.cmd.version or argv.cmd.help)
+# 					throw new Error "TODO: command versioning and help not yet implemented"
+# 				if !!exit
+# 					console.log if Array.isArray exit then exit.join '\n' else exit
+# 					delete inst._args
+# 					process.exit 0
+# 				else # if cmd.trim!length
+# 					debug "~~~~~~~~~~~exec server.... %s %s", process.execPath, process.execArgv.join ' '
+# 					#ToolShed.exec process.execPath + ' '+ process.execArgv.join ' ', (err, code) ->
+# 					return
+# 					debug "execing cmd '%s'", args.join ' '
+# 					verse.exec \cmd args, (ret) ->
+# 						if ret not instanceof Error
+# 							console.log if Array.isArray ret then ret.join '\n' else ret
+# 						else
+# 							console.log "ERRROR"
+# 							console.log ret.message
+# 						console.log "load termial"
+# 						#verse.emit \load_terminal
+
+# 			else
+# 				# client
+# 				console.log "we are a client???"
+# 				#verse.exec \terminal, "MechanicOfTheSequence/Verse(master)"
+# 		if Array.isArray default_args then self._args = default_args
 
 class Ambiente extends Fsm # Verse
 	(id, opts) ->
@@ -131,12 +804,13 @@ class Ambiente extends Fsm # Verse
 				# DaFunk.extend @refs.machina, @architect
 				console.log "initializing..."
 				console.log "TODO: install procstreams"
-				err <~ ToolShed.mkdir SOURCE_DEPS_PATH
-				if err => throw err
+				if @id => console.log "@exec \load, #{@id}"
 				if @id => @exec \load, @id
 
 			'node:onenter': ->
 				console.log "NODE UNIVERSE"
+				err <~ ToolShed.mkdir SOURCE_DEPS_PATH
+				if err => throw err
 				# @refs.akasha = @akasha = new EtherDB @refs, name: \MultiVerse
 				@refs.akasha = @akasha = new EtherDB @refs, name: \UniVerse
 
@@ -227,6 +901,46 @@ class Ambiente extends Fsm # Verse
 					console.log "install mod", module
 
 				Fs.readdir
+			spawn: (bundle, bin, args) ->
+				if ~(i = bundle.indexOf '@')
+					bundle = bundle.substr 0, i
+					version = bundle.version i+1
+				else
+					version = \latest
+
+				var _bundle
+				_each @UNIVERSE.bundle, (b, v) ->
+					if (Semver.satisfies b.version, version) and (not _bundle or Semver.gt b.version, _bundle.version)
+						_bundle = b
+
+				if _bundle
+					if path = b.bin[cmd]
+						path = Path.join AMBIENTE_PATH, path
+						console.log "spawning bundle binary: '#bin' with path: '#path'"
+					else
+						console.log "no idea dude..."
+						console.log "bundle: '#bundle' bin: '#bin' args:", args
+						console.log "universe bundle:", UNIVERSE.bundle
+
+			create: (impl, ether) ->
+				# this is to spawn a new instance
+			connect: (impl) ->
+				console.log "create!", impl._impl.idea
+				if impl and impl._impl and (idea = impl._impl.idea)
+					verse = new Verse impl, impl
+
+
+				# for now, we assume that our execution is "node" (unless specified differently by the implementation)
+				@debug.todo """
+					TODO: spawn this in a separate instance
+					 - [ ] compile the code
+					 - [ ] write the output into a temp file (or a designated location)
+					 - [ ] spawn node with this source.
+					 - [ ] wrap the source in a shell (a verse) for easy communication
+					"""
+
+
+				# ToolShed.exec (Path.join AMBIENTE_PATH, \bin \node), [\library]
 
 
 		download:
@@ -256,8 +970,6 @@ class Ambiente extends Fsm # Verse
 				# it would be nice to get this data from a different location :)
 				TARGET_UNIVERSE = opts
 				UNIVERSE := Config AMBIENTE_JSON
-				#console.log "UNIVERSE", UNIVERSE
-				#console.log "TARGET_UNIVERSE", TARGET_UNIVERSE
 
 				NODE_VERSION = TARGET_UNIVERSE.bundle.node
 				MONGO_VERSION = TARGET_UNIVERSE.bundle.mongo
@@ -329,24 +1041,26 @@ class Ambiente extends Fsm # Verse
 						node_build.choke (done) ->
 							Rimraf Path.join(BUILD_PATH, \node), done
 						node_build.end ->
-							console.log "build node end", &
 							node_build_done ...
 						#*/
 						node_build_done null
 					build.push (node_done) ->
 						node.end (err) ->
-							console.log "node done building", &
 							if err
 								Rimraf NODE_SRC_PATH, ->
 									node_done err
 							else
 								# INCOMPLETE: merge the deps here...
-								UNIVERSE.bundle.node = NODE_VERSION
+								UNIVERSE.bundle.'node@#{NODE_VERSION' = {
+									version: NODE_VERSION
+									bin:
+										node: 'bin/node'
+										npm: 'bin/npm'
+								}
 								# 1. write .Sencillo/lib/package.json
 								ToolShed.writeFile AMBIENTE_LIB_JSON, JSON.stringify(UNIVERSE, null, '  ')
 								# 2. open lib/ as a repository
 								install_deps ->
-									console.log "emitted ready! we're done"
 									node_done ...
 								#node_done ...
 				# MONGO
@@ -372,7 +1086,6 @@ class Ambiente extends Fsm # Verse
 						Rimraf Path.join(SOURCE_DEPS_PATH, MONGO_NAME), done
 					build.push (done) ->
 						mongo.end (err) ->
-							console.log "mongo.end", &
 							UNIVERSE.bundle.mongo = TARGET_UNIVERSE.bundle.mongo
 							done ...
 
@@ -382,7 +1095,7 @@ class Ambiente extends Fsm # Verse
 
 				process.on \exit ->
 					console.log "exiting"
-					console.log build.results
+					# console.log build.results
 				build.end (err, res) ->
 					console.log "build.end", &
 					#throw new Error "build end"
@@ -437,6 +1150,7 @@ class Ambiente extends Fsm # Verse
 			console.log "going to read:" AMBIENTE_JSON
 			UNIVERSE := Config AMBIENTE_JSON, empty_uV
 			UNIVERSE.once \ready (config, data) ~>
+				console.log "UNIVERSE READY"
 
 				# the package should have bundle: {version, dependencies} etc.
 				# @transition \install_deps
@@ -496,6 +1210,7 @@ class Ambiente extends Fsm # Verse
 					version
 
 				task.wait!
+
 				_.each TARGET_UNIVERSE.bundle, (v, b) ~>
 					console.log "UNIVERSE", UNIVERSE.bundle
 					@debug "checking bundle: (%s@%s) satisfies (%s@%s)", b, UNIVERSE.bundle[b], b, TARGET_UNIVERSE.bundle[b]
@@ -509,6 +1224,7 @@ class Ambiente extends Fsm # Verse
 
 				task.choke (done) -> @exec \install_modules, done
 
+				console.log "run task.end"
 				(err, res) <~ task.end
 				if err
 					throw err

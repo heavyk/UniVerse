@@ -14,10 +14,13 @@ machina:
 		ready:
 			resolve: (module, cb) ->
 				@debug.todo "check to see if node exists and is compiled"
-				console.log "NPM RESOLVE", module
 				try
-					# TODO: this will break for './Reality'
-					if module.substr(0, 2) isnt './' and ~(i = module.indexOf '.')
+					if ~(i = module.indexOf '@')
+						version = module.substr i+1
+						module = module.substr 0, i
+					if module.0 is '.'
+						throw new Error "local references are not allowes"
+					else if ~(i = module.indexOf '.')
 						path = module.substr i+1
 						mod = module.substr 0, i
 						mod = require mod
