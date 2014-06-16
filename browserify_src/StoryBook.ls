@@ -1,6 +1,7 @@
 
 Url = require \url
 assert = require \assert
+less = require \less
 
 # Library = require './Library' .Library
 Session = require './Session' .Session
@@ -177,8 +178,15 @@ class StoryBook extends Fsm
 						if typeof e.fromState is \undefined
 							aC self._el, self._parts[renderer] = if typeof r is \function => r.call(self, cE, data) else r
 						else if el = self._parts[renderer]
-							# console.error "RENDER:", self._loading
-							el.innerHTML = ''
+							# a slightly faster way of clearning an element:
+							# http://jsperf.com/innerhtml-vs-removechild/178
+							# method 1:
+							# el.innerHTML = ''
+							el.textContent = ''
+							# method 2:
+							# _el = el.cloneNode false
+							# el.parentNode.replaceChild _el, el
+							# self._parts[renderer] = el = _el
 							aC el, if typeof r is \function => r.call(self, cE, data) else r
 						else set_path--
 						# console.error "set_path", set_path, path.0, e.args
@@ -252,8 +260,8 @@ class StoryBook extends Fsm
 								if machina.states[machina.state][path]
 									machina.exec path, e
 								else #if machina.states[path]
-									if path is '/logout'
-										debugger
+									# if path is '/logout'
+									# 	debugger
 									machina.transition path
 							, 100
 							# we will assume that we don't want to adjust above elements.
@@ -327,12 +335,12 @@ class StoryBook extends Fsm
 				bp.once_initialized ~>
 					@debug "POEM INITIALIZED.... wait for a session"
 					@session.once_initialized !~>
-						@debug "SESSION INITIALIZED.... going to imbue the poem now..."
+						@debug "SESSION INITIALIZED...."
 						noem = name+'@'+version
 						@debug.todo "replace_path here with the poem loaded ... later replace again"
 						@session.now.poem = noem
 						sess_id = @session.id
-						@debug "loading poem '#noem' with sess_id: #sess_id"
+						@debug "loading poem '#noem' with sess_id: #sess_id", bp
 						@poem = poem = @poetry.Poem[name] sess_id
 						poem.on \transition (evt) ~>
 							console.log "transition evt", evt.toState
@@ -355,12 +363,39 @@ class StoryBook extends Fsm
 						@poem_fqvns.push fqvn
 						@poem_els.push poem._el
 						# transition the storybook to the poem in use
-						@transition name+'@'+version
-						# debugger
+
+						if not bp._blueprint.style
+							debugger
+						else
+							not_found = true
+							for e in els = document.getElementsByTagName \style
+								if e.dataset.encantador is bp.encantador and e.dataset.incantation is bp.incantation
+									not_found = e.disabled = false
+								else
+									e.disabled = true
+							if not_found is true
+								parser = new window.less.Parser {
+									env: \development
+									# async: false
+									filename: bp.encantador+'-'+bp.incantation+'.less'
+									rootpath: window.location.host
+									paths: ['bootstrap/less', '.']
+									relativeUrls: false
+									timeout: 2000
+									# optimization: 2
+								}
+								parser.parse bp._blueprint.style, ((err, tree) ->
+									css = tree.toCSS!
+									aC null cE \style, data: {bp.encantador, bp.incantation}, css
+								), {
+									globalVars: void
+									modifyVars: void
+								}
+
 						poem.transition @path
+						@transition noem
+
 						@debug.todo "load up the path into the poem"
-						# debugger
-						# done!
 
 		activate: (fqvn) ->
 			# if not poem = @poems[fqvn]

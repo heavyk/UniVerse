@@ -16,6 +16,7 @@ SliceFile = require \slice-file
 # woah, check this out:
 # https://github.com/gkz/grasp
 find = argv.2
+ext = if argv.3 => '.' + argv.3 else '.ls'
 # TODO: add // regex support
 ToolShed.searchDownwardFor 'package.json', (err, path) ->
 	if err => throw err
@@ -24,9 +25,9 @@ ToolShed.searchDownwardFor 'package.json', (err, path) ->
 	found = 0
 	dir = Path.dirname path
 	# console.log dir + '\n' + ('=' * dir.length) + '\n'
-	walker = Walk dir
-	walker.on \file (path, st) ->
-		if (path.substr -3) is '.ls'
+	walker = Walk dir, {+follow_symlinks}
+	walker.on \file, (path, st) ->
+		if (path.substr -ext.length) is ext
 			line = 1
 			emitted_filename = false
 			s = (SliceFile path).slice!
