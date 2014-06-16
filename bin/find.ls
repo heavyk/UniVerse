@@ -45,10 +45,3 @@ ToolShed.searchDownwardFor 'package.json', (err, path) ->
 
 	walker.on \end ->
 		console.log "\nfound '#{argv.2}' #found times in #{files.length} files..."
-		# grep argv.2, files
-
-
-# if argv.length is 4
-# 	do_hardlinks argv.2, argv.3
-# else
-# 	console.log "#{Path.basename argv.1} [srcdir] [destdir]"
