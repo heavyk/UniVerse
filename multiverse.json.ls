@@ -155,6 +155,8 @@ sencillo:
 		"lib/node_modules/imagemagick-native":
 			upstream: "github://mash/node-imagemagick-native"
 
+		"lib/node_modules/deep-diff":
+			upstream: "github://flitbit/diff"
 		"lib/node_modules/lodash":
 			upstream: "github://lodash/lodash"
 		"lib/node_modules/less":
@@ -164,6 +166,9 @@ sencillo:
 		"lib/node_modules/term.js":
 			upstream: "github://chjj/term.js"
 
+		"opt/third_party/git":
+			upstream: "github://git/git"
+			revision: "v2.0.0"
 		"opt/third_party/ArangoDB":
 			upstream: "github://triAGENS/ArangoDB"
 			revision: "868dfd206b532ce7b90fcc84446720790b9f1ddd"
