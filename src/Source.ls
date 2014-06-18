@@ -54,8 +54,8 @@ VERSE_PATH = Path.join SOURCE_PATH, ".verse"
 VERSE_CONFIG_PATH = Path.join VERSE_PATH, \config.json
 VERSE_PKG_JSON_PATH = Path.join VERSE_PATH, \package.json
 
+#TODO: move these to properties of verse
 set_uV_paths = (id) ->
-	# TODO: make this a getter/setter on the global object
 	AMBIENTE_ID := id
 	AMBIENTE_PATH := Path.join SOURCE_PATH, id
 	AMBIENTE_LIB_PATH := Path.join AMBIENTE_PATH, \lib
@@ -90,11 +90,18 @@ scope = {
 	mmmm: 1111
 }
 
+# cluster = require \cluster
+
+
 class Verse extends Fsm
-	(amb, impl) ->
-		if (impl.namespace.indexOf \Implementation) isnt 0
+	(ambiente, implementation) ->
+		if typeof implementation is \undefined
+			implementation = ambiente
+			ambiente = null
+		if (implementation.namespace.indexOf \Implementation) isnt 0
 			throw new Error "you gatta have an Implementation"
-		@ambiente = (@origin = [new Ambiente \UniVerse]).0
+		# @ambiente = (@origin = [new Ambiente \UniVerse]).0
+
 		console.log "welcome to Verse "
 
 	eventListeners:
@@ -110,9 +117,10 @@ class Verse extends Fsm
 			onenter: ->
 				task = @task 'Load Verse(main)'
 				task.choke (done) -> ToolShed.mkdir VERSE_PATH, done
-				unless @ambiente.initialzed
-					task.push "wait for ambiente", (done) ~>
-						@ambiente.on \state:ready, done
+				# this should never happen:
+				# unless @ambiente.initialzed
+				# 	task.push "wait for ambiente", (done) ~>
+				# 		@ambiente.on \state:ready, done
 				task.push "load Verse config", (done) ->
 					debug "loading gobal config: %s", VERSE_CONFIG_PATH
 					cfg = Config VERSE_CONFIG_PATH
@@ -204,6 +212,7 @@ class Verse extends Fsm
 			ForeverMonitor = require \forever-monitor .Monitor
 			debug "spawning server with stdin: %s ", typeof process.stdin.on
 
+
 			child = new ForeverMonitor __filename,
 				command: Path.join \bin, \verse # get the universes' node processs
 				silent: false,
@@ -273,16 +282,6 @@ var UNIVERSE
 var _uV
 
 # TODO: move this over to the machina
-CORES = 8
-OS = switch process.platform
-| \darwin => \osx
-| \linux => \linux
-| \android => \android
-| otherwise => throw new Error "unsupported platform!"
-global.ARCH = ARCH = switch process.arch
-| \x64 => \x86_64
-| \ia32 => \ia32
-| otherwise => throw new Error "only 64 bits supported for now..."
 
 # probably I will want to integrate the multiverse into a docker
 #  https://github.com/dotcloud/docker
@@ -292,490 +291,6 @@ global.ARCH = ARCH = switch process.arch
 #  -> UniVerse.modules.mymodule['4.3.x'] (does magic to get that module)
 #    -> _.each module.versions, (mod, v) ->
 
-# class Verse extends Fsm
-# 	# Verse is a singleton, so we can do this:
-# 	self = {}
-# 	self._id = void
-# 	missing = []
-# 	cmd_order = []
-# 	commands = {}
-# 	aliases = {}
-# 	demanded = {}
-# 	checks = []
-# 	transforms = {}
-# 	name = 'unnamed'
-# 	version = '0.0.0'
-# 	defaults = {}
-# 	descriptions = {}
-# 	description = ''
-# 	usage = void
-# 	wrap = null
-
-# 	flags = {
-# 		bools: {}
-# 		strings: {}
-# 	}
-
-# 	(default_args, is_command = false) ->
-# 		# self = this
-# 		@@id := (id) ->
-# 			if id isnt \shell
-# 				id = Uuid.unparse Uuid.parse id
-# 			Verse._id = id
-# 			self
-# 		if typeof default_args is \string
-# 			#debug "loading verse with default args %s", default_args
-
-# 			verse.exec \load default_args
-# 			self.id default_args
-# 			if id = process.env.VERSE_ID
-# 				#verse.transition \hymbook
-# 				if ~id.indexOf ','
-# 					_.each id.split(','), (id) ->
-# 						verse.exec \initialize id
-# 				else
-# 					verse.exec \initialize id
-# 			if typeof inst is \object then return inst
-# 			if process.send
-# 				debug "WE GOT A VERSE_PIPE spawn"
-
-# 		fail = (msg) ->
-# 			self.showHelp!
-# 			if msg then console.error msg
-# 			if typeof process is \object
-# 				process.exit 0
-# 			else if typeof thread is \object
-# 				thread.emit \err msg
-# 		parseArgs = (args = []) ->
-# 			if Array.isArray self._args and not args.length then args = self._args ++ args
-# 			else args || []
-# 			argv = {
-# 				_: []
-# 				self.$0
-# 			}
-# 			setArg = (key, val) ->
-# 				#console.error "setArg", is_command, key, val#, argv
-# 				num = Number val
-# 				value = if typeof val isnt \string or isNaN num then val else num
-# 				value = val if flags.strings[key]
-# 				if val is true
-# 					if typeof defaults[key] is not \undefined then value = defaults[key]
-# 					if typeof defaults[key] is true then value = false
-# 				if a = aliases[key]
-# 					for k in a
-# 						if val is true
-# 							if typeof defaults[k] is not \undefined then value = defaults[k]
-# 							if defaults[k] is true then value = false
-# 						if t = transforms[k] then value = t value
-# 				else if t = transforms[key] then value = t value
-# 				if is_command is false or true
-# 					setKey argv, (key.split '.'), value
-# 					if a = aliases[key] then for k in a then argv[k] = argv[key]
-# 				else
-# 					setKey argv.cmd, (key.split '.'), value
-# 					if a = aliases[key] then for k in a then argv.cmd[k] = argv.cmd[key]
-
-# 			for key, v of flags.bools
-# 				setArg key, defaults[key] || false
-
-# 			i = 0
-# 			while i < args.length
-# 				arg = args[i]
-# 				if arg is '--'
-# 					argv._.push.apply argv._, args.slice i + 1
-# 					break
-# 				else
-# 					if arg.match /^--.+=/
-# 						m = arg.match /^--([^=]+)=(.*)/
-# 						setArg m.1, m.2
-# 					else if arg.match /^--no-.+/
-# 						key = (arg.match /^--no-(.+)/).1
-# 						setArg key, false
-# 					else if arg.match /^--.+/
-# 						key = (arg.match /^--(.+)/).1
-# 						next = args[i + 1]
-# 						if typeof next isnt \undefined and not next.match /^-/ and not flags.bools[key] and (if aliases[key] then not flags.bools[aliases[key]] else true)
-# 							setArg key, next
-# 							i++
-# 						else
-# 							if /^(true|false)$/.test next
-# 								setArg key, next is 'true'
-# 								i++
-# 							else
-# 								if demanded[key] then missing.push key
-# 								else setArg key, true
-# 					else
-# 						if arg.match /^-[^-]+/
-# 							letters = (arg.slice 1, -1).split ''
-# 							broken = false
-# 							j = 0
-# 							while j < letters.length
-# 								if letters[j + 1] and letters[j + 1].match /\W/
-# 									setArg letters[j], arg.slice j + 2
-# 									broken = true
-# 									break
-# 								else
-# 									setArg letters[j], true
-# 								j++
-# 							if not broken
-# 								key = (arg.slice -1).0
-# 								if args[i + 1] and not args[i + 1].match /^-/ and not flags.bools[key] and (if aliases[key] then not flags.bools[aliases[key]] else true)
-# 									setArg key, args[i + 1]
-# 									i++
-# 								else
-# 									if args[i + 1] and /true|false/.test args[i + 1]
-# 										setArg key, args[i + 1] is 'true'
-# 										i++
-# 									else
-# 										setArg key, true
-# 						else
-# 							n = Number arg
-# 							v = if flags.strings._ || isNaN n then arg else n
-# 							argv._.push v
-# 							if is_command is false and cmd_order.length and argv._.length and cc = commands[argv._.0]
-# 								argv.cmd = cc.parse.call cc, args.slice i+1
-# 								break
-# 				i++
-# 			for key, def of defaults
-# 				if key not of argv and (key of demanded or key not of flags.strings)
-# 					argv[key] = def
-# 					argv[aliases[key]] = defaults[key] if key of aliases
-# 			if demanded._ and argv._.length < demanded._
-# 				fail 'Not enough non-option arguments: got ' + argv._.length + ', need at least ' + demanded._
-# 			for key, v of demanded
-# 				if typeof v is not \number and not argv[key]
-# 					missing.push key
-# 			if missing.length then fail 'Missing required arguments: ' + missing.join ', '
-# 			checks.forEach ((f) ->
-# 				try
-# 					fail 'Argument check failed: ' + f.toString! if (f argv) is false
-# 				catch err
-# 					fail err)
-# 			argv
-# 		longest = (xs) -> Math.max.apply null, xs.map ((x) -> x.length)
-# 		load_config = ->
-# 		self.$0 = ((process.argv.slice 0, 2).map ((x) ->
-# 			b = rebase process.cwd!, x
-# 			if (x.match /^\//) && b.length < x.length then b else x)).join ' '
-# 		if process.argv.1 is process.env._
-# 			self.$0 = process.env._.replace (Path.dirname process.execPath) + '/', ''
-# 		self.boolean = (bools) ->
-# 			bools = [].slice.call arguments if not Array.isArray bools
-# 			for name in bools
-# 				flags.bools[name] = true
-# 			self
-# 		self.string = (strings) ->
-# 			strings = [].slice.call arguments if not Array.isArray strings
-# 			for name in strings then flags.strings[name] = true
-# 			delete flags.bools[name]
-# 			self
-# 		self.terminal = (fn) ->
-# 			verse.once \synced ->
-# 				verse.exec \terminal fn
-# 			self
-# 		self.alias = (x, y) ->
-# 			if typeof x is \object
-# 				for key, val of x then self.alias key, val
-# 			else
-# 				if Array.isArray y
-# 					for yy in y then self.alias x, yy
-# 				else
-# 					zs = ((aliases[x] || []).concat aliases[y] || []).concat x, y
-# 					aliases[x] = zs.filter (z) -> z isnt x
-# 					aliases[y] = zs.filter (z) -> z isnt y
-# 			self
-# 		self.demand = (keys) ->
-# 			if typeof keys is 'number'
-# 				demanded._ = 0 if not demanded._
-# 				demanded._ += keys
-# 			else
-# 				if Array.isArray keys
-# 					for key in keys then self.demand key
-# 				else demanded[keys] = true
-# 			self
-# 		self.usage = (msg, opts) ->
-# 			if not opts and typeof msg is \object
-# 				opts = msg
-# 				msg = null
-# 			usage := msg
-# 			if opts then self.options opts
-# 			self
-# 		self.check = (f) ->
-# 			checks.push f
-# 			self
-# 		self.transform = (key, fn) ->
-# 			transforms[key] = fn
-# 			self
-# 		self.default = (key, value) ->
-# 			if typeof key is \object
-# 				for k, v of key then self.default k, v
-# 			else defaults[key] = value
-# 			self
-# 		self.describe = (key, desc) ->
-# 			if typeof key is \object
-# 				for k, v of keys then self.describe k, v
-# 			else descriptions[key] = desc
-# 			self
-# 		self.description = (desc) ->
-# 			description := desc
-# 			self
-# 		self.action = (fn) ->
-# 			if is_command then self._action = fn
-# 			else Verse._action = fn
-# 			self
-# 		self.autocomplete = (fn) ->
-# 			if is_command then self._autocomplete = fn
-# 			else Verse._autocomplete = fn
-# 			self
-# 		self.fsm = (fsm) ->
-# 			if is_command then throw new Error "for now, commands cannot have fsm's -- yet"
-# 			else Verse._fsm = fsm
-# 			self
-# 		self.init = (fn) ->
-# 			if is_command
-# 				#self._init = fn
-# 				throw new Error "command initialization not yet supported"
-# 			else Verse._init = fn
-# 			self
-# 		self.name = (name) ->
-# 			debug "loading verse with name: %s", name
-# 			Verse._name = name
-# 			verse.exec \load name
-# 			self
-# 		self.version = (v) ->
-# 			if is_command then self._version = v
-# 			else Verse._version = v
-# 			self
-# 		self.schema = (s) ->
-# 			Verse.emit \todo, "implement schemas"
-# 			if is_command then self._schema = v
-# 			else Verse._schema = v
-# 			self
-# 		self.timeout = (ms, fn) ->
-# 			self._timeout = ms
-# 			self._timeout_fn = fn
-# 			Verse.emit \todo, "Verse.timeout(ms, fn) not yet implemented... make a pull request and help a brother out"
-# 			self
-# 		self.parse = (args, cb) ->
-# 			debug "parse args: %O %s", args, !!is_command
-# 			argv = parseArgs args
-# 			debug "parsed argv (main:%s)", is_command is false
-# 			if typeof cb is \function
-# 				switch argv._.length is 1 and argv._.0
-# 				| \version => cb Verse._version
-# 				| \help =>
-# 					debug "calling self.help %s %s" self.help!, cb
-# 					cb self.help!
-# 				| \quit => process.exit 0 # maybe this is a bit too abrupt :) perhaps a nice shutdown
-# 				| otherwise => verse.exec \parse is_command, argv, cb
-# 			argv
-# 		self.option = self.options = (key, opt, transform_fn, defaultVal) ->
-# 			if typeof key is \object
-# 				(Object.keys key).forEach (k) -> self.option k, key[k]
-# 			else
-# 				if typeof opt is \string then opt = {describe: opt}
-# 				else if typeof opt isnt \object then opt = {}
-# 				if typeof transform_fn is \function then opt.transform = transform_fn
-# 				else if typeof defaultVal is \undefined then defaultVal = transform_fn
-# 				if ~key.indexOf '-no-'
-# 					opt.default = true
-# 				if ~key.indexOf '['
-# 					opt.default = defaultVal or true
-# 					delete opt.boolean
-# 				else if ~key.indexOf '<'
-# 					if typeof defaultVal isnt \undefined
-# 						opt.default = defaultVal
-# 					else opt.string = true
-# 					opt.demand = 1
-# 					delete opt.boolean
-# 				else if typeof defaultVal isnt \undefined and typeof defaultVal isnt \boolean
-# 					opt.default = defaultVal
-# 					opt.string = true
-# 				else opt.boolean = true
-# 				key = key.split /[ ,|]+/
-# 				if key.length > 1 and not /^[[<]/.test key.1
-# 					opt.alias = key.shift! .replace /^-/, ''
-# 				key = key.shift!replace '--', '' .replace 'no-', ''
-# 				if key.indexOf '-' isnt -1 then key = camelcase key
-# 				# ----
-# 				if opt.alias then self.alias key, opt.alias
-# 				if typeof opt.demand is \number then demanded[key] = opt.demand
-# 				else if opt.demand then self.demand key
-# 				if typeof opt.default isnt \undefined then self.default key, opt.default
-# 				if opt.boolean or opt.type is \boolean then self.boolean key
-# 				if opt.string or opt.type is \string then self.string key
-# 				if typeof opt.transform is \function then self.transform key, opt.transform
-# 				if desc = opt.describe or opt.description or opt.desc then self.describe key, desc
-# 			self
-# 		self.command = (cmd) ->
-# 			#Verse.emit \todo, "rip off the commander command parser -- so that 'location <location>' works"
-# 			#TODO: verify the command exists
-# 			cmds = cmd.split RegExp ' +'
-# 			c = cmds.shift!
-# 			commands[c] = _argv = new Verse false, self
-# 			cmd_order.push c
-# 			_argv.signature = cmd
-# 			_argv
-# 		self.dependncy = (pkg, version) ->
-# 			#TODO: add a npm dependency
-# 			v = Verse._dependncies[pkg]
-# 			if is_command
-# 				# it should lazy load the dependency, if the dep is only used by a command
-# 				if typeof v is \undefined
-# 					self.emit \dep pkg, version
-# 				else
-# 					debug "this dependency already exists!"
-# 					#TODO: add a semver check to the universe
-# 			else
-# 				if typeof v is \undefined
-# 					Verse._dependncies[pkg] = version
-# 				else
-# 					debug "dependency conflict! #{v} vs. requested: #{version}"
-# 					#TODO: add a semver check to the universe to see if it's the latest
-# 					#  else prompt to see if we wanna upgrade
-# 			self
-# 		self.use = (service, opts = {}) ->
-# 			#TODO: save the service, and make sure to launch it before loading is done
-# 			svc = Verse._service[service]
-# 			if not ~Verse.AVAILABLE_SERVICES.indexOf service
-# 				debug "unknown service: #{service}"
-# 			if is_command
-# 				# it should lazy load the dependency, if the dep is only used by a command
-# 				if typeof svc is \undefined
-# 					self.emit \load_service service, opts
-# 				else
-# 					debug "this dependency already exists!"
-# 					#TODO: add a semver check to the universe
-# 			else
-# 				if typeof svc is \undefined
-# 					Verse._service[pkg] = service
-# 				else
-# 					debug "dependency conflict! #{v} vs. requested: #{version}"
-# 					#TODO: add a semver check to the universe to see if it's the latest
-# 					#  else prompt to see if we wanna upgrade
-# 			self
-# 		self.universe = (name, opts) ->
-# 			#TODO: make sure to connect to this universe
-# 			if is_command
-# 				debug "for now, commands cannot connect to a different universe. this is soon possible"
-# 				# 1. check to see if it's the same universe
-# 				# 2. if it's different and not opts.autoconnect, connect to it lazily
-# 				# 3. this is just a normal dnode connection to run the command over there
-# 				#self._universe = new UniVerse opts, refs
-# 			else
-# 				debug "TODO: make sure to connect to te universe"
-# 				Verse._universe = new UniVerse opts, refs
-# 			self
-# 		self.wrap = (cols) ->
-# 			wrap := cols
-# 			self
-# 		self.showHelp = (fn) ->
-# 			fn = console.error if not fn
-# 			fn self.help!
-# 		self.help = ->
-# 			wordwrap = require 'wordwrap'
-# 			# you can get self-help here! LOLz
-# 			if is_command isnt false
-# 				return "#description"
-# 			keys = Object.keys (((Object.keys descriptions).concat Object.keys demanded).concat Object.keys defaults).reduce ((acc, key) ->
-# 				acc[key] = true if key isnt '_'
-# 				acc), {}
-# 			help = [if usage then 'Usage: '+(usage.replace /\$0/g, VERSE_NAME) else "#{VERSE_NAME} v#{Verse._version}"]
-# 			if description.length then help.push "  #description", ''
-# 			if keys.length then help.push 'Options:'
-# 			switches = keys.reduce ((acc, key) ->
-# 				acc[key] = (([key].concat aliases[key] || []).map ((sw) -> (if sw.length > 1 then '--' else '-') + sw)).join ', '
-# 				acc), {}
-# 			switchlen = longest (Object.keys switches).map ((s) -> switches[s] || '')
-# 			desclen = longest (Object.keys descriptions).map ((d) -> descriptions[d] || '')
-# 			for key in keys
-# 				kswitch = switches[key]
-# 				desc = descriptions[key] || ''
-# 				if wrap then desc = ((wordwrap switchlen + 4, wrap) desc).slice switchlen + 4
-# 				spadding = (new Array Math.max switchlen - kswitch.length + 3, 0).join ' '
-# 				dpadding = (new Array Math.max desclen - desc.length + 1, 0).join ' '
-# 				type = null
-# 				if flags.bools[key] then type = '[boolean]'
-# 				if flags.strings[key] then type = '[string]'
-# 				if not wrap && dpadding.length > 0 then desc += dpadding
-# 				prelude = '  ' + kswitch + spadding
-# 				extra = ([
-# 					type
-# 					if demanded[key] then '[required]' else null
-# 					if typeof defaults[key] isnt \undefined then '[default: ' + defaults[key] + ']' else null
-# 				].filter Boolean).join '  '
-# 				body = ([desc, extra].filter Boolean).join '  '
-# 				if wrap
-# 					dlines = desc.split '\n'
-# 					dlen = (dlines.slice -1).0.length + if dlines.length is 1 then prelude.length else 0
-# 					body = desc + if dlen + extra.length > wrap - 2 then '\n' + (new Array wrap - extra.length + 1).join ' ' + extra else ((new Array wrap - extra.length - dlen + 1).join ' ') + extra
-# 				help.push prelude + body
-# 			help.push ''
-# 			if cmd_order.length
-# 				help.push 'Commands:'
-# 				max_len = 0
-# 				for cmd in cmd_order
-# 					max_len = Math.max commands[cmd].signature.length, max_len
-# 				wl = wordwrap max_len+8, process.stdout.columns-2
-# 				for cmd in cmd_order
-# 					sig = commands[cmd].signature
-# 					help.push "  #{sig}#{wl(commands[cmd].help!).substr sig.length+2}"
-# 					#help.push "  #{sig} #{commands[cmd].help!}"
-
-# 			help.join '\n'
-# 		Object.defineProperty self, '_cmds', {
-# 			get: -> commands
-# 		}
-# 		Object.defineProperty self, 'argv', {
-# 			get: parseArgs
-# 			enumerable: true
-# 		}
-# 		/*
-# 		Object.defineProperty self, 'scope', {
-# 			get: ->
-# 				throw new Error "could be a problem here with the scope..."
-# 				scope
-# 			enumerable: true
-# 		}
-# 		*/
-
-# 		#TODO: save the cwd, and do an import
-# 		if Array.isArray default_args then verse.on \connected ->
-# 			if VERSE_MODE is \server
-# 				args = _.filter default_args.slice(0), (arg) ->
-# 					if typeof arg is \string and not ~arg.indexOf 'fallback.js' then arg
-
-# 				debug "going to try parsing... %s", typeof inst
-# 				argv = inst.parse args
-# 				if (argv._.length is 0 and argv.version) or (argv._.length is 1 and argv._.0 is \version)
-# 					exit = Verse._version
-# 				else if (argv._.length is 0 and argv.help) or (argv._.length is 1 and argv._.0 is \help)
-# 					exit = Verse.help!
-# 				else if argv.cmd and (argv.cmd.version or argv.cmd.help)
-# 					throw new Error "TODO: command versioning and help not yet implemented"
-# 				if !!exit
-# 					console.log if Array.isArray exit then exit.join '\n' else exit
-# 					delete inst._args
-# 					process.exit 0
-# 				else # if cmd.trim!length
-# 					debug "~~~~~~~~~~~exec server.... %s %s", process.execPath, process.execArgv.join ' '
-# 					#ToolShed.exec process.execPath + ' '+ process.execArgv.join ' ', (err, code) ->
-# 					return
-# 					debug "execing cmd '%s'", args.join ' '
-# 					verse.exec \cmd args, (ret) ->
-# 						if ret not instanceof Error
-# 							console.log if Array.isArray ret then ret.join '\n' else ret
-# 						else
-# 							console.log "ERRROR"
-# 							console.log ret.message
-# 						console.log "load termial"
-# 						#verse.emit \load_terminal
-
-# 			else
-# 				# client
-# 				console.log "we are a client???"
-# 				#verse.exec \terminal, "MechanicOfTheSequence/Verse(master)"
-# 		if Array.isArray default_args then self._args = default_args
 
 class Ambiente extends Fsm # Verse
 	(id, opts) ->
@@ -792,6 +307,18 @@ class Ambiente extends Fsm # Verse
 		DaFunk.extend @, Fabuloso
 		super "Ambiente(#id)", opts
 		_uV := this
+
+	initialize: ->
+		@CORES = require \os .cpus!length
+		@OS = switch process.platform
+		| \darwin => \osx
+		| \linux => \linux
+		| \android => \android
+		| otherwise => throw new Error "unsupported platform!"
+		@ARCH = switch process.arch
+		| \x64 => \x64
+		| \ia32 => \ia32
+		| otherwise => throw new Error "only 64 bits supported for now..."
 
 	states:
 		uninitialized:
@@ -1037,7 +564,7 @@ class Ambiente extends Fsm # Verse
 							}
 							ToolShed.exec "./configure --prefix=#{AMBIENTE_PATH}", cwd: BUILD_NODE, done
 						node_build.choke (done) ->
-							ToolShed.exec "make -j#{CORES} install PORTABLE=1", cwd: BUILD_NODE, done
+							ToolShed.exec "make -j#{@CORES} install PORTABLE=1", cwd: BUILD_NODE, done
 						node_build.choke (done) ->
 							Rimraf Path.join(BUILD_PATH, \node), done
 						node_build.end ->
@@ -1065,8 +592,8 @@ class Ambiente extends Fsm # Verse
 								#node_done ...
 				# MONGO
 				unless Semver.satisfies UNIVERSE.bundle.mongo, MONGO_VERSION
-					MONGO_NAME = "mongodb-#{OS}-#{ARCH}-#{MONGO_VERSION}"
-					MONGO_URL = "http://fastdl.mongodb.org/#{OS}/#{MONGO_NAME}.tgz"
+					MONGO_NAME = "mongodb-#{@OS}-#{@ARCH}-#{MONGO_VERSION}"
+					MONGO_URL = "http://fastdl.mongodb.org/#{@OS}/#{MONGO_NAME}.tgz"
 					MONGO_SRC_PATH = Path.join SOURCE_DEPS_PATH, MONGO_NAME
 					mongo = @task 'download mongo'
 					mongo.choke (done) -> ToolShed.mkdir MONGO_SRC_PATH, ->
@@ -1242,7 +769,11 @@ class Ambiente extends Fsm # Verse
 			task.push (done) ->
 				ToolShed.stat deps_path+'/.git', (err, st) ->
 					if err and err.code is \ENOENT
-						ToolShed.exec "git clone -n https://github.com/#{uri.hostname}#{uri.path}.git #{deps_path}", {cwd: AMBIENTE_PATH}, ->
+						<- Rimraf deps_path
+						ToolShed.exec "git clone -n https://github.com/#{uri.hostname}#{uri.path}.git #{deps_path}", {cwd: AMBIENTE_PATH}, (err) ->
+							if err
+								console.log "TODO: abstract this funcion out and deal with the errors"
+								throw err
 							ToolShed.exec "git clone #{deps_path} #{path}", {cwd: AMBIENTE_PATH}, (code) ->
 								done code, path
 							# ToolShed.exec "git checkout  -b default #{opts.revision || 'master'}", {cwd: deps_path}, ->
@@ -1252,6 +783,7 @@ class Ambiente extends Fsm # Verse
 						# 	ToolShed.exec "git fetch origin", {cwd: deps_path}, ->
 						# 		console.log "done fetch", &
 						checkout_path = Path.join AMBIENTE_PATH, path
+
 						ToolShed.stat checkout_path, (err, st) ->
 							if err
 								if err.code is \ENOENT
@@ -1294,7 +826,7 @@ class Ambiente extends Fsm # Verse
 				}
 				ToolShed.exec "./configure --prefix=#{AMBIENTE_PATH}", cwd: SRC_PATH, done
 			task.choke (done) ->
-				ToolShed.exec "make -j#{CORES} install PORTABLE=1", cwd: SRC_PATH, done
+				ToolShed.exec "make -j#{@CORES} install PORTABLE=1", cwd: SRC_PATH, done
 			task.end ->
 				console.log "build node end", &
 				UNIVERSE.bundle.node = version
@@ -1316,16 +848,16 @@ class Ambiente extends Fsm # Verse
 				# if 64, add --64
 				# --cc=gcc-4.8 --cxx=gcc-4.8
 				prefix = AMBIENTE_PATH
-				if OS is \osx
+				if @OS is \osx
 					console.log "replacing..."
 					prefix = prefix.replace ToolShed.HOME_DIR+'', '~'
 				extra = ''
-				if ARCH is \x86_64
+				if @ARCH is \x64
 					extra += "--64"
-				# if OS is \osx and sh.which 'gcc-4.8'
-				console.log OS, ToolShed.HOME_DIR, prefix
-				console.log "scons --prefix='#prefix' -j#{CORES} #extra install"
-				ToolShed.exec "scons --prefix='#prefix' -j#{CORES} #extra install", cwd: SRC_PATH, done
+				# if @OS is \osx and sh.which 'gcc-4.8'
+				console.log @OS, ToolShed.HOME_DIR, prefix
+				console.log "scons --prefix='#prefix' -j#{@CORES} #extra install"
+				ToolShed.exec "scons --prefix='#prefix' -j#{@CORES} #extra install", cwd: SRC_PATH, done
 			task.end (err) ->
 				unless err
 					UNIVERSE.bundle.mongo = version
@@ -1396,7 +928,7 @@ class Ambiente extends Fsm # Verse
 					--enable-internal-go
 					--disable-mruby]>join(' ') + " --prefix=#{AMBIENTE_PATH}", cwd: SRC_PATH, done
 			# task.choke (done) -> quick_exec "cmake .", done
-			task.choke (done) -> ToolShed.exec "make -j#{CORES} install", cwd: SRC_PATH, done
+			task.choke (done) -> ToolShed.exec "make -j#{@CORES} install", cwd: SRC_PATH, done
 
 			task.end (err) ->
 				unless err
@@ -1424,7 +956,7 @@ class Ambiente extends Fsm # Verse
 						ToolShed.exec "hg checkout go1.2", cwd: GO_SRC_PATH, done
 					task.choke (done) ->
 						console.log "gonna build go now"
-						ToolShed.exec "sh all.bash -j#{CORES}" {cwd: "#{GO_SRC_PATH}/src"} (err) ->
+						ToolShed.exec "sh all.bash -j#{@CORES}" {cwd: "#{GO_SRC_PATH}/src"} (err) ->
 							if err
 								console.warn "there might be an error in go:", err.message
 								console.log "continuing..."

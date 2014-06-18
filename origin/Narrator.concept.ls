@@ -1,9 +1,21 @@
 # rename this to Narrator (and its implementation is Service-Http)
 # then, make a service called Http, and register this service there
 # lastly, merge this with the browserify source and only output the base + specific versions
-idea: \Http
+motivation: \node@0.11.13
+implementation: \Http # this needs to be a Process
+inception: \Narrator # this is the Verse
+type: \Cardinal
 version: \0.1.0
-description: "express yourself"
+description: "una red social basada en nuestra afinidad"
+idea: \Http #until I fix the code, this is necessary
+motd:
+	* "omg! we're so much alike!"
+embodies:
+	* \Empathy # Fabuloso (on by default)
+	* \Creativity # this will be the owner and stuff
+possesses:
+	* \Origin # where to find this and the original author of the code
+	* \Agreement # how this can be interacted with, registers the service, etc.
 local:
 	Path:					\node://path
 	Fs:						\node://fs
@@ -24,14 +36,17 @@ local:
 	Mime:					\npm://mime
 	Multipart:		\npm://co-multipart
 	Co:						\npm://co
-	Implementation: \src://Implementation.Implementation
+	'{Implementation}': \src://Implementation
+	# PublicDB:			\foxx://PublicDB
 
-	# ArangoDB:			\Verse://ArangoDB@latest
-	# MongoDB:			\Verse://MongoDB@latest
-	# Laboratory:		\Verse://Laboratory@latest
+	ArangoDB:			\concept://ArangoDB@latest
+	# MongoDB:			\process://MongoDB@latest
+	# Laboratory:		\process://Laboratory@latest
 machina:
 	initialize: (opts) ->
+		@db = new @ArangoDB \affinaty
 		@port = port = opts.port || 80
+		@pubdb_proxy = @HttpProxy.createProxyServer target: 'http://127.0.0.1:1111'
 		@pubdb_proxy = @HttpProxy.createProxyServer target: 'http://127.0.0.1:1111'
 		@static_dirs = <[theme node_modules build doc lib mode less third_party]>
 		@_gridfs = {}
@@ -205,22 +220,24 @@ machina:
 			# 	rereq.pipe req
 			# 	*/
 			else if url is '/' or true
+				console.log "TODO: get the title correctly - I think this is defined somewhere in the poem"
+				console.log "TODO: don't expose dirs like node_modules etc. as static."
 				res.end """
 				<!DOCTYPE html>
 				<html lang="en">
 					<head>
 						<meta charset="utf-8"/>
-						<title>SUUUPER SECRET</title>
-						<link rel="stylesheet" href="/lib/codemirror.css">
+						<title>UniVerse</title>
+						<!-- link rel="stylesheet" href="/lib/codemirror.css" -->
 						<meta name="viewport" content="width=device-width, initial-scale=1.0">
 						<script src="/lib/loader.js"></script>
-						<script src="/lib/codemirror.js"></script>
+						<!-- script src="/lib/codemirror.js"></script -->
 						<!-- script src="/lib/blueshift.js"></script -->
-						<script src="/node_modules/Current/jive.js"></script>
-						<script src="/mode/livescript/livescript.js"></script>
-						<script src="/build/component.js"></script>
-						<script src="/build/jquery/dist/jquery.js"></script>
+						<script src="/node_modules/lodash/dist/lodash.js"></script>
 						<script src="/build/holder/holder.js"></script>
+						<!-- script src="/mode/livescript/livescript.js"></script -->
+						<script src="/build/component.js"></script>
+						<script src="/node_modules/jquery/dist/jquery.js"></script>
 						<script src="/build/bootstrap/dist/js/bootstrap.js"></script>
 						<!--script src="https://login.persona.org/include.js"></script-->
 						<!--script src="/third_party/tty.js/static/term.js"></script -->

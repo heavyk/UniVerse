@@ -3,25 +3,28 @@ console.log "welcome to verse"
 console.log "argv:", process.argv
 console.log "TODO: add verse stuff here"
 
-process.on \uncaughtException (err) ->
-	console.error "uncaught error:", err.stack
-	if err.filename
-		console.log "error in #{err.filename}"
-	throw err
-
 Path = require \path
 Fs = require \fs
-Growl = require \Growl
+Growl = require \growl
 
 require \LiveScript
 
-{ DaFunk, Config } = require \MachineShop
+{ DaFunk, Config, Debug } = require \MachineShop
 { Implementation } = require Path.join __dirname, \src \Implementation
 { Reality } = require Path.join __dirname, \src \Reality
 { LocalLibrary } = require Path.join __dirname, \src \LocalLibrary
 { Ambiente, UniVerse } = require Path.join __dirname, \src \Source
 
-to_load = \verse
+debug = Debug \verse
+
+print_uncaught = (err) ->
+	if err.filename
+		# @debug "error compiling file: #{err.filename} - #err"
+		console.log "error compiling file: #{err.filename} - #err"
+	else
+		# @debug.error "uncaughtException: #{err.stack}"
+		console.error "uncaughtException: #{err.stack}"
+process.on \uncaughtException print_uncaught
 
 # console.log "W", __dirname+"/browserify_src"
 # watcher = Fs.watch __dirname+"/browserify_src", (evt) ->
@@ -64,23 +67,17 @@ amb.on \state:ready ->
 	console.log "technically, I shouldn't need to wait for its ready state. the Implementation should do that"
 	# UniVerse here
 	add_growl \
-		impl = new Implementation amb, "origin/Narrator.concept.ls"
+		impl = new Implementation amb, "origin/ArangoDB.concept.ls"
 
 	var narrator
 	impl.on \compile:success ->
 		_.each impl._instances, (inst) ->
 			inst.exec \destroy
 
-		Narrator = impl.imbue Reality
-		narrator = new Narrator {}, {
-			port: 1155
-			domains:
-				'dev.affinaty.es':
-					poem: \Affinaty@latest
-					title: "Affinaty@latest"
-				'affinaty.es':
-					poem: \Affinaty@0.1.0
-					title: "affinaty"
+		ArangoDB = impl.imbue Reality
+		# this should essentially be the config
+		narrator = new ArangoDB {
+			port: 1111
 		}
 		narrator.on \state:ready ->
 			console.log 'HTTP ready'

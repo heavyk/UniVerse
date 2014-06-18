@@ -7,8 +7,8 @@ assert = require \assert
 # Ini = require \ini
 # Github = require \github
 Walk = require \walkdir
-LiveScript = require \livescript
-LSAst = require \livescript/lib/ast
+LiveScript = require \LiveScript
+LSAst = require \LiveScript/lib/ast
 
 # instead of doing source maps like this,
 # I will definitely want to be doing this:

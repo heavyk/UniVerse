@@ -90,21 +90,43 @@ default_langs =\
 
 			return output
 
-class Shell extends Fsm # Reality
-	impl:
-		idea: \Shell
+# when Implementation detects a change, it tells Process
 
+# Verse becomes manager of these processes
+class Process extends Fsm # Reality
 	# (origin, opts) ->
-	(impl, opts) ->
-		@instance = []
-		console.log "hello, I am a shell"
-		console.log "origin", @origin
-		super ...
+	(@ambiente, @implementation, @ether) ->
+		unless ambiente or implementation or ether
+			throw new Error "needs: params: (Ambiente, Implementation, Manifest)"
+		@cluster = require \cluster
+
+
+		# TODO: call Reality (to get any necessary things)
+		super "Process(@implementation.idea)"
 
 	states:
 		uninitialized:
 			onenter: ->
 				console.log "so, I'm uninitialized now.. we've got to wait for the instance to become ready"
+
+				if @cluster.isMaster
+					@role = \master
+					console.log "TODO: launch the verse"
+					# 1. the verse receives the commands and executes them off to the children
+					# 2.
+
+					@verse = new Verse @ether
+					@verse.once \ready ~>
+						@transition \ready
+				else
+					@role = \aprentice
+					console.log "this is a child. start the implementation up here"
+					src = @implementation.src
+					#
+
+				# @ambiente.exec \motivator, @ether.motivation, (motivator) ->
+				# 	@ambiente.exec \verse, @ether.implementation, (verse) ->
+
 				@once \add:instance ~>
 					@transition \ready
 
@@ -115,8 +137,9 @@ class Shell extends Fsm # Reality
 	cmds:
 		spawn: ->
 			console.log "spawning..."
-			uV = @origin.0
-			uV
+			ambiente = @origin.0
+			ambiente
+
 
 
 
@@ -124,9 +147,9 @@ class Implementation extends Fsm # Reality
 	# idea: \Implementation
 	# embodies:
 	# 	\Growler
-	(uV, path) ->
-		if typeof uV is \string
-			path = uV
+	(ambiente, path) ->
+		if typeof ambiente is \string
+			path = ambiente
 
 		impl = {}
 		if typeof path is \object
@@ -137,19 +160,24 @@ class Implementation extends Fsm # Reality
 		else
 			throw new Error "you must define a path for your Implementation"
 
-		@origin = [uV]
+		@origin = [ambiente]
 		@_impl = impl
 		@_instances = []
 		@src = ''
 
 		super "Implementation(#{path})", opts
 
-	watch: 100
+	watch: (ms = 100) ->
+		# this really should be a cmd
+		# start the watcher
+		@_watch = ms
+
 	stringify: ->
 		if lang = default_langs[@lang]
 			lang.stringify ...
 		else
-			throw new Error "not yet possible. add more langs"
+			throw new Error "not yet possible. TODO: add more langs"
+
 	imbue: (essence) ->
 		idea = (impl = @_impl).idea
 		@debug.todo "save the imbued"
@@ -160,10 +188,10 @@ class Implementation extends Fsm # Reality
 				(ii = self._instances).splice (ii.indexOf inst), 1
 
 		machina = @_impl.machina
-		if uV = @origin.0
-			console.log "yay, we have an origin", uV.namespace
-			uV.exec \connect self
-			# uV.exec \create self
+		if ambiente = @origin.0
+			console.log "yay, we have an origin", ambiente.namespace
+			ambiente.exec \connect self
+			# ambiente.exec \create self
 
 		unless idea_constructor = @_constructor
 			eval """
@@ -183,33 +211,37 @@ class Implementation extends Fsm # Reality
 			}())
 			"""
 		return @_constructor = idea_constructor
+
+	eventListeners:
+		"set:src": -> @exec \compile
+		"compile:success": (res) ->
+			#TODO: update reality
+			_.each @_instances, (impl) ->
+				lhs = impl._impl
+				rhs = res.output
+				d = DeepDiff.observableDiff lhs, rhs, (d) ->
+					switch d.kind
+					| \E =>
+						if typeof d.lhs is \function and typeof d.rhs is \function
+							if d.lhs.toString! is d.rhs.toString!
+								return
+					console.log "change d:", d
+					DeepDiff.applyChange lhs, rhs, d
+					switch d.path.0
+					| \local =>
+						console.log "TODO: update any locals. changed:", d
+					| \machina =>
+						d.path.shift!
+						# console.log "applying:", d
+						DeepDiff.applyChange impl, rhs.machina, d
+			# _.each @_instances
+			# 	DeepDiff.applyChange impl, rhs.machina, d
+			console.log "exec save", (Path.join @origin.0.library.path, @name)
+			@exec \save (Path.join @origin.0.library.path, @name)
+
 	states:
 		uninitialized:
 			onenter: ->
-				@on \set:src -> @exec \compile
-				@on \compile:success, (res) ->
-					#TODO: update reality
-					_.each @_instances, (impl) ->
-						lhs = impl._impl
-						rhs = res.output
-						d = DeepDiff.observableDiff lhs, rhs, (d) ->
-							switch d.kind
-							| \E =>
-								if typeof d.lhs is \function and typeof d.rhs is \function
-									if d.lhs.toString! is d.rhs.toString!
-										return
-							console.log "change d:", d
-							DeepDiff.applyChange lhs, rhs, d
-							switch d.path.0
-							| \local =>
-								console.log "TODO: update any locals. changed:", d
-							| \machina =>
-								d.path.shift!
-								# console.log "applying:", d
-								DeepDiff.applyChange impl, rhs.machina, d
-					# _.each @_instances
-					# 	DeepDiff.applyChange impl, rhs.machina, d
-
 				@once \executed:compile -> @transition \ready
 				@exec \read @path
 
@@ -217,27 +249,36 @@ class Implementation extends Fsm # Reality
 			onenter: ->
 				@emit \ready @_impl, @src
 
-			save:
-				onenter: ->
-					obj = @_impl
-					json_str = if opts.ugly => JSON.stringify obj else DaFunk.stringify obj, DaFunk.stringify.desired_order path
-					if json_str isnt @src
-						path = @path
-						Fs.writeFile path, json_str, (err) ~>
-							if err
-								if err.code is \ENOENT
-									dirname = Path.dirname path
-									ToolShed.mkdir dirname, (err) ~>
-										if err
-											@transition \error, err
-										else @transition \retry
-								else
-									@transition \error, err
+			save: (path, opts) ->
+				if typeof opts isnt \object
+					opts = {}
+				unless path
+					return
+				console.log "save:", path
+				if ~path.indexOf \origin
+					throw new Error "cannot save '#path'"
+				# return
+				console.log "saving: '#path'"
+				obj = @_impl
+				json_str = if opts.ugly => JSON.stringify obj else DaFunk.stringify obj, DaFunk.stringify.desired_order path
+				if json_str isnt @src
+					path = @path
+					# Fs.writeFile "/tmp/output.js", json_str, (err) ~>
+					Fs.writeFile path, json_str, (err) ~>
+						if err
+							if err.code is \ENOENT
+								dirname = Path.dirname path
+								ToolShed.mkdir dirname, (err) ~>
+									if err
+										@transition \error, err
+									else @transition \retry
 							else
-								@src = json_str
-								@emit \saved obj, path, json_str
-							@transition \ready
-					else @transition \ready
+								@transition \error, err
+						else
+							@src = json_str
+							@emit \saved obj, path, json_str
+						@transition \ready
+				else @transition \ready
 
 			retry:
 				onenter: ->
@@ -258,9 +299,11 @@ class Implementation extends Fsm # Reality
 			if typeof path isnt \string
 				return
 
-			if path isnt @path and @watcher
-				@watcher = null
-			if ms = @watch and not @watcher
+			if path isnt @path
+				@path = path
+				@file = Path.basename path
+				@watcher = null if @watcher
+			if ms = @_watch and not @watcher
 				@watcher = Fs.watchFile path, {interval: ms} (st1, st2) ~>
 					@debug "disturbance @ '#path'"
 					@exec \read path
@@ -284,6 +327,7 @@ class Implementation extends Fsm # Reality
 				@lang = @parts[*-1]
 			if @parts.length > 2
 				@proto = @parts[*-2]
+			@name = @parts.slice 0, -1 .reverse!join '.'
 
 		compile: ->
 			if lang = default_langs[@lang]

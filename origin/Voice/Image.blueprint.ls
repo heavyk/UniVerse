@@ -4,6 +4,9 @@
 # maybe add lab support:
 # https://github.com/antimatter15/rgb-lab
 
+# it'd be cool to add gif support
+# Gif: github://mscdex/node-gif
+
 encantador: \Voice
 incantation: \Image
 type: \Cardinal
