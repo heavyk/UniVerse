@@ -167,7 +167,7 @@ class ExperienceDB extends Fsm
 					# there should be a methid for an obj to register events
 					# also, to unregister the events
 					if method isnt \delete
-						xp = ToolShed.objectify data, {}, {name: id} #ToolShed.da_funk res, {}, {name: @id}
+						xp = ToolShed.objectify data, {}, {name: id}
 						if xp._key and not xp._id
 							xp._id = @incantation+'/'+xp._key
 						cb null, xp if typeof cb is \function

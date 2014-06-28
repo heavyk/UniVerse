@@ -15,6 +15,8 @@ require! \MachineShop
 
 { ToolShed, Fsm, Machina, DaFunk, Empathy } = MachineShop
 
+Implementation = require './Implementation' .Implementation
+
 # { StoryBook } = require './StoryBook'
 # { ExperienceDB, Perspective, Quest } = require './ExperienceDB'
 
@@ -128,26 +130,9 @@ Symbolic = {}
 # a Verse (Mutable) extends Meaning implements Timing
 # a Word or Poem (Fixed) extends Meaning implements Definition
 
-get_path = (obj, str, split = '.') ->
-	str = str.split split
-	i = 0
-	while i < str.length
-		obj = obj[str[i++]]
-	obj
-# I think the one above is the fastest.
-# I also think that the above function can be optimized by using indexOf and substr -- another time I suppose :)
-#OPTIMIZE! - jsperf anyone? (this is an almost useless optimization and should be added to Current too. Current shlould be fastest general lib - like lodash)
-#get_path2 = (obj, str) -> (str.split '.').reduce ((o, x) -> o[x]), obj
-set_path = (obj, str, val, split = '.') ->
-	str = str.split split
-	while str.length > 1
-		obj = obj[str.shift!]
-	obj[str.shift!] = val
-
-
 #NOTE: the name, NodeJSBlueprint isn't good. it will be changed.
-class NodeJSBlueprint extends Fsm
-	(refs, opts) ->
+class Blueprint extends Implementation
+	(ambiente, path) ->
 		if typeof opts is \undefined
 			opts = refs
 
@@ -443,7 +428,9 @@ Uri.parse = (uri) ->
 
 # I really need to take some ideas from the old Verse implementation here.
 # then, take the rest of the ideas for Machina/Process
-class Blueprint extends Fsm
+
+
+class Blueprint_old extends Fsm
 	encantador: \Blueprint
 	incantation: \Idea
 	version: \latest

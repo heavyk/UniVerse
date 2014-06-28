@@ -5,13 +5,19 @@ console.log "TODO: add verse stuff here"
 
 Path = require \path
 Fs = require \fs
-Growl = require \growl
+try
+	# transition to use https://github.com/mikaelbr/node-notifier
+	# or this one: https://github.com/Teamwork/node-notifier-allowed-in-mac-app-store (uses lower version of alloy/terminal-notifier)
+	Growl = require \growl
+catch e
+	Growl = ->
 
 require \LiveScript
 
 { DaFunk, Config, Debug } = require \MachineShop
 { Implementation } = require Path.join __dirname, \src \Implementation
 { Reality } = require Path.join __dirname, \src \Reality
+{ Ether } = require Path.join __dirname, \src \Ether
 { LocalLibrary } = require Path.join __dirname, \src \LocalLibrary
 { Ambiente, UniVerse } = require Path.join __dirname, \src \Source
 
@@ -61,23 +67,65 @@ add_growl = (fsm) ->
 		Growl "#{@path} compiled correctly", {title, image: \./icons/success.png}
 	fsm.on \compile:failure, (err) -> Growl err.message, {title, image: \./icons/fail.png}
 
-amb = new Ambiente \sencillo
-amb.on \state:ready ->
-	console.log "ambiente is ready!!"
-	console.log "technically, I shouldn't need to wait for its ready state. the Implementation should do that"
-	# UniVerse here
-	add_growl \
-		impl = new Implementation amb, "origin/ArangoDB.concept.ls"
+console.log "argv", process.argv
+verse = process.argv.3
+version = process.argv.4
 
-	var narrator
-	impl.on \compile:success ->
-		_.each impl._instances, (inst) ->
-			inst.exec \destroy
+console.log "gonna monitor changes to the multiverse... if there are any, we should reload"
+src = new Implementation null, "./TheSource.json.ls", "./thesource.json"
+src.once \saved ->
+	#TODO: source and ambiente should be separated
+	console.log "source is ready!"
 
-		ArangoDB = impl.imbue Reality
-		# this should essentially be the config
-		narrator = new ArangoDB {
-			port: 1111
-		}
-		narrator.on \state:ready ->
-			console.log 'HTTP ready'
+mV = new Implementation null, "./MultiVerse.json.ls", "./multiverse.json"
+# mV.exec \watch
+mV.on \compile:success ->
+	console.log "compile was a success"
+	@debug "multiverse modified..."
+mV.on \state:ready (mv_impl) ->
+	@debug "multiverse is READY"
+
+mV.once \saved ->
+	amb = new Ambiente process.env.AMBIENTE_ID || \sencillo
+	# RETURNING WITH INTERNET
+	amb.on \state:ready ->
+		console.log "ambiente is ready!!"
+		console.log "TODO: technically, I shouldn't need to wait for its ready state. the Implementation should do that"
+		# if VERSE_ID = process.env.VERSE_ID
+		# 	# console.log "spawning Implementation"
+		# 	# XXX: I should be spawning UniVerse.concept here..
+		# 	impl = new Implementation amb, "origin/#{VERSE_ID}.ls"
+		# 	impl.on \compile:success ->
+		# 		_.each impl._instances, (inst) ->
+		# 			inst.exec \destroy
+
+		# 		ArangoDB = impl.imbue Ether
+		# 		db = new ArangoDB {
+		# 			port: 1111
+		# 		}
+		# 		db.on \state:ready ->
+		# 			console.log 'ArangoDB ready'
+		# else
+		# 	amb.exec \add:verse \PublicDB.concept (verse) ->
+		# 		console.log "yay we got a verse:", verse.namespace
+		# amb.exec \add:verse \Narrator.concept (verse) ->
+		# 	console.log "yay we got a verse:", verse.namespace
+		# END RETURNING WITH INTERNET
+		# add_growl \
+		# 	impl = new Implementation amb, "origin/PublicDB.concept.ls"
+		console.log "load narrator"
+		add_growl \
+			impl = new Implementation amb, "origin/Narrator.concept.ls"
+
+		var db
+		impl.on \compile:success ->
+			_.each impl._instances, (inst) ->
+				inst.exec \destroy
+
+			ArangoDB = impl.imbue Ether
+			# this should essentially be the config
+			db = new ArangoDB {
+				port: 1155
+			}
+			db.on \state:ready ->
+				console.log 'ArangoDB ready'

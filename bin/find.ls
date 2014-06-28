@@ -34,8 +34,11 @@ ToolShed.searchDownwardFor 'package.json', (err, path) ->
 			s.on \data (data) !->
 				if ~(i = (d = data+'').indexOf find)
 					unless emitted_filename
-						rpath = path.substr dir.length+1
-						console.log '\n' + rpath + '\n' + ('-' * rpath.length)
+						rpath = Path.relative dir, path
+						# rpath = path.substr dir.length+1
+						# console.log "path: #path"
+						# console.log "dir: #dir"
+						console.log "\n#rpath\n#{'-' * rpath.length}"
 						emitted_filename := true
 					console.log "#line: #{d.trim!}"
 					results[rpath+':'+line] = d

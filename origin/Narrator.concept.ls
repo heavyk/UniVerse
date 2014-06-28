@@ -36,15 +36,16 @@ local:
 	Mime:					\npm://mime
 	Multipart:		\npm://co-multipart
 	Co:						\npm://co
-	'{Implementation}': \src://Implementation
+	'{Implementation}':
+		\src://Implementation
 	# PublicDB:			\foxx://PublicDB
 
-	ArangoDB:			\concept://ArangoDB@latest
+	# ArangoDB:			\concept://ArangoDB@latest
 	# MongoDB:			\process://MongoDB@latest
 	# Laboratory:		\process://Laboratory@latest
 machina:
 	initialize: (opts) ->
-		@db = new @ArangoDB \affinaty
+		# @db = new @ArangoDB \affinaty
 		@port = port = opts.port || 80
 		@pubdb_proxy = @HttpProxy.createProxyServer target: 'http://127.0.0.1:1111'
 		@pubdb_proxy = @HttpProxy.createProxyServer target: 'http://127.0.0.1:1111'
@@ -153,7 +154,7 @@ machina:
 				if parts.length isnt 2
 					throw new Error "some sort of error here"
 
-				console.log "check implementation origin/#path.blueprint.ls"
+				console.log "check implementation origin/#path.blueprint.ls", typeof @Implementation
 				impl = new @Implementation @origin.0, "origin/#path.blueprint.ls"
 				console.log "origin__ origin/#path.blueprint.ls"
 				impl.once \new ->
@@ -323,6 +324,7 @@ machina:
 		_.each proxies, (o, p) ~>
 			opts = {}
 			if target = o.target
+				console.log "Url", @Url
 				url = @Url.parse target
 				if url.protocol is \ws:
 					opts.ws = true
@@ -345,6 +347,7 @@ machina:
 				# @http_proxy = @HttpProxy.createProxyServer target: 'http://127.0.0.1:1111'
 				# @ws_proxy = @HttpProxy.createProxyServer target: 'ws://127.0.0.1:1133' ws: true
 
+				console.log "uninitialized!!!!!!!!!!!!!!!!!!!!"
 				@_server = @Http.createServer @_app
 				# server.on \upgrade (req, socket, head) ->
 				# 	dnode_proxy.ws req, socket, head

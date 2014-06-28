@@ -42,7 +42,7 @@ class LocalLibrary extends Fsm
 
 		@index = {}
 		cwd = process.cwd!
-		@path = Path.relative(cwd, @abs_path = Path.resolve path)
+		@rpath = Path.relative(cwd, @path = Path.resolve path)
 		if opts.protos
 			@protos = {}
 			@rel_protos = Path.relative(cwd, @abs_protos = Path.resolve opts.protos)
@@ -61,7 +61,6 @@ class LocalLibrary extends Fsm
 					if parts.length is 3
 						proto = parts.0
 						proto_list.push proto
-						# console.log "shiiit", @origin
 						impl = new Implementation @origin.0, path
 						impl.on \ready ~>
 							Proto = impl.imbue Reality

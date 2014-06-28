@@ -3,6 +3,24 @@
 Path = require \path
 Fs = require \fs
 
+spawn = require \child_process .spawn
+
+exec = (cmd, opts, cb) ->
+	if typeof opts is \function
+		cb = opts
+		opts = {stdio: \inherit}
+	opts.stdio = \inherit unless opts.stdio
+	opts.env = process.env unless opts.env
+	cmds = cmd.split ' '
+	p = spawn cmds.0, cmds.slice(1), opts
+	p.on \error (err) ->
+		opts.env = "omitted"
+		debug "exec '#cmd' failed %s", DaFunk.stringify opts
+		cb err
+	p.on \close (code) ->
+		if code then cb new Error "exit code: "+code
+		else cb code
+
 # _console_log = console.log
 # global.console.log = (f) ->
 # 	# _console_log "local log...", f, &.length
@@ -24,6 +42,26 @@ Fs = require \fs
 # 		console.log "ERROR::::"
 # 		console.log e.stack
 
+
+# TODO: install only the necessary packages to get the ambiente running. after that, the ambiente will take care of the rest
+# TODO: verify the sha sums by calling npmd programatically
+
+pkg_json = require Path.join __dirname, \.. \package.json
+install_these = []
+deps = pkg_json.'npmd.install'
+for k, v of deps => install_these.push if typeof v is \object => v.name + '@' + v.version else k + '@' + v
+
+# TODO: pipe this output into something, parse the json. etc
+console.log "executing:" "./node_modules/.bin/npmd install #{install_these.join ' '} --greedy"
+exec "./node_modules/npmd/index.js install #{install_these.join ' '} --greedy", (code) ->
+	if code
+		console.log "npmd returned with error code #code"
+	else
+		console.log "npmd finished without a problem"
+
+console.log "TODO: 'verse ambiente is sencillo'"
+
+return
 
 UniVerse = require '../UniVerse'
 { ToolShed, Fsm } = require \MachineShop
