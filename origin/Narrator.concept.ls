@@ -344,14 +344,7 @@ machina:
 	states:
 		uninitialized:
 			onenter: ->
-				# @http_proxy = @HttpProxy.createProxyServer target: 'http://127.0.0.1:1111'
-				# @ws_proxy = @HttpProxy.createProxyServer target: 'ws://127.0.0.1:1133' ws: true
-
-				console.log "uninitialized!!!!!!!!!!!!!!!!!!!!"
 				@_server = @Http.createServer @_app
-				# server.on \upgrade (req, socket, head) ->
-				# 	dnode_proxy.ws req, socket, head
-
 				@_server.on \connection (req, socket, head) !~>
 					@debug "incoming connection"
 				@_server.on \error (err) !~>
@@ -368,6 +361,7 @@ machina:
 					@listening = true
 					@transition \ready
 
+					# TODO: interact with the child processes
 					# if process.send
 					# 	process.send {
 					# 		type: \ready
@@ -385,7 +379,6 @@ machina:
 
 		stopped:
 			onenter: ->
-				console.log "!!!!!!!!!!!!! entered stopped stage", @listening
 				if @_server and @listening
 					@_server.close!
 
