@@ -351,7 +351,7 @@ class Ambiente extends Fsm # Verse
 					console.log "yay we are already docker"
 					@exec \load, @id if @id
 				else
-					THE_SOURCE := require '../thesource'
+					THE_SOURCE := require '../source'
 					unless THE_SOURCE := DaFunk.freedom THE_SOURCE
 						done new Error "could not give the source its basic funk freedom! (lol)"
 						return

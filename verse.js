@@ -60,7 +60,7 @@ console.log("argv", process.argv);
 verse = process.argv[3];
 version = process.argv[4];
 console.log("gonna monitor changes to the multiverse... if there are any, we should reload");
-src = new Implementation(null, "./JesusChristHasAGoldenShower.json.ls", "./source.json");
+src = new Implementation(null, "./JesusMuthaFuckinChrist.json.ls", "./source.json");
 src.once('saved', function(){
   return console.log("source is ready!");
 });
