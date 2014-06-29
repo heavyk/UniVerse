@@ -26,7 +26,7 @@
 Path = require \path
 Url = require \url
 
-{ Fsm, Fabuloso, ToolShed, _ } = require 'MachineShop'
+{ Fsm, ToolShed, _ } = require 'MachineShop'
 { Debug } = ToolShed
 # { PublicDB, LocalDB, Blueprint } = require './PublicDB'
 { PublicDB, LocalDB } = require './PublicDB'
@@ -82,7 +82,7 @@ class UniVerse extends Fsm
 		refs.archive = @archive = new PublicDB name: \UniVerse
 		refs.library = @library = new Library refs, name: \sencillo
 
-		ToolShed.extend @, Fabuloso
+		ToolShed.extend @, Fsm.Empathy
 		super "UniVerse"
 
 	eventListeners:

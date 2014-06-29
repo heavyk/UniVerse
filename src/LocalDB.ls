@@ -1,4 +1,4 @@
-{ Fsm, Fabuloso, ToolShed, _ } = require 'MachineShop'
+{ Fsm, DaFunk, ToolShed, _ } = require 'MachineShop'
 { Debug } = ToolShed
 
 
@@ -6,7 +6,7 @@
 class LocalDB extends Fsm
 	(options) ->
 		# debugger
-		ToolShed.extend @, Fabuloso
+		DaFunk.extend @, Fsm.Empathy
 		super "LocalDB"
 
 	states:

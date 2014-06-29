@@ -6,7 +6,7 @@ Http = require \http
 Process = require './Process' .Process
 LocalDB = require './LocalDB' .LocalDB
 
-{ Fsm, Fabuloso, ToolShed, _ } = require 'MachineShop'
+{ Fsm, ToolShed, _ } = require 'MachineShop'
 { Debug } = ToolShed
 
 debug = Debug \EtherDB

@@ -42,7 +42,7 @@ class ExperienceDB extends Fsm
 		@__request = []
 		if assert
 			@deleted = []
-		# ToolShed.extend this, Fabuloso
+
 		super "ExperienceDB(#incantation)"
 
 	states:
@@ -275,7 +275,7 @@ class ExperienceDB extends Fsm
 		# assert typeof xp._key is \undefined
 		# assert typeof xp._id is \undefined
 
-		vals = ToolShed.extend {}, xp
+		vals = DaFunk.extend {}, xp
 		assert typeof vals._rev is \undefined
 		assert typeof vals._id is \undefined
 		assert typeof vals._key is \undefined

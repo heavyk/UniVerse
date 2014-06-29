@@ -7,7 +7,7 @@ Session = require './Session' .Session
 # make the ICropper a part of the image bp
 # Slick = require \rslnautic-slick .Slick
 
-{ Fsm, ToolShed, Fabuloso, _ } = require 'MachineShop'
+{ Fsm, ToolShed, _ } = require 'MachineShop'
 
 # this does almost everything this guy wants:
 # http://mvalente.eu/category/programming/
@@ -109,7 +109,7 @@ class StoryBook extends Fsm
 		else if typeof @_el isnt \object
 			throw new Error "I dunno what to do! "+typeof @_el
 
-		ToolShed.extend @, Fabuloso
+		DaFunk.extend @, Fsm.Empathy
 		super "StoryBook"
 		if typeof id is \string
 			@debug.todo "load up a storybook from the database of a defined id (figurehead)"
@@ -404,5 +404,5 @@ class StoryBook extends Fsm
 
 # console.log "before extend:", StoryBook::initialize
 # debugger
-ToolShed.extend StoryBook::, Fabuloso
+DaFunk.extend StoryBook::, Fsm.Empathy
 export StoryBook

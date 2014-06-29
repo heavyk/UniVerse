@@ -2,7 +2,7 @@
 Url = require \url
 assert = require \assert
 
-{ Fsm, ToolShed, Fabuloso, _ } = require 'MachineShop'
+{ Fsm, ToolShed, DaFunk, _ } = require 'MachineShop'
 
 # this does almost everything this guy wants:
 # http://mvalente.eu/category/programming/
@@ -38,7 +38,7 @@ class Narrator extends Fsm
 		@words = {}
 		@_ = {}
 
-		ToolShed.extend @, Fabuloso
+		DaFunk.extend @, Fsm.Empathy
 		super "Narrator"
 		if typeof id is \string
 			@debug.todo "load up a narrator from the database of a defined id (figurehead)"

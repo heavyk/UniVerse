@@ -197,7 +197,7 @@ class Blueprint extends Implementation
 			# for now though, this is good enough
 			if typeof book.memory[@incantation] is \undefined
 				book.memory[@incantation] = new ExperienceDB @incantation
-			#OPTIMIZE: this could be potentially costly to call ToolShed.extend ... I dunno...
+			#OPTIMIZE: this could be potentially costly to call DaFunk.extend ... I dunno...
 			#OPTIMIZE: perhaps instead of eval, we should use new Function
 			if typeof book.poetry[@encantador] is \undefined
 				eval """
@@ -206,15 +206,15 @@ class Blueprint extends Implementation
 						var prototype = extend$((import$(#{@encantador}, superclass).displayName = '#{@encantador}', #{@encantador}), superclass).prototype, constructor = #{@encantador};
 						function #{@encantador} (book, _bp, key, opts) {
 							if(!(this instanceof #{@encantador})) return new #{@encantador}(key, opts);
-							//#{if @type is \Cardinal then 'ToolShed.extend(this, DefineTone);' else ''}
-							//#{if @type is \Mutable then 'ToolShed.extend(this, DefineTiming);' else ''}
-							//#{if @type is \Fixed then 'ToolShed.extend(this, DefineSymbolic);' else ''}
+							//#{if @type is \Cardinal then 'DaFunk.extend(this, DefineTone);' else ''}
+							//#{if @type is \Mutable then 'DaFunk.extend(this, DefineTiming);' else ''}
+							//#{if @type is \Fixed then 'DaFunk.extend(this, DefineSymbolic);' else ''}
 							#{@encantador}.superclass.call(this, book, _bp, key, opts);
 						}
-						ToolShed.extend(prototype, _blueprint.machina);
+						DaFunk.extend(prototype, _blueprint.machina);
 						return #{@encantador};
 					}(Meaning));
-					ToolShed.extend(#{@encantador}, Magnetism);
+					DaFunk.extend(#{@encantador}, Magnetism);
 					book.poetry['#{@encantador}'] = #{@encantador};
 				}())
 				"""
@@ -226,19 +226,19 @@ class Blueprint extends Implementation
 						var embodies = _deps.embodies, prototype = extend$((import$(#{@encantador}, superclass).displayName = '#{@encantador}', #{@encantador}), superclass).prototype, constructor = #{@encantador};
 						function #{@encantador} (key, opts) {
 							if(!(this instanceof #{@encantador})) return new #{@encantador}(key, opts);
-							#{if @type is \Cardinal then 'ToolShed.extend(this, Tone);' else ''}
-							#{if @type is \Mutable then 'ToolShed.extend(this, Timing);' else ''}
-							#{if @type is \Fixed then 'ToolShed.extend(this, Symbolic);' else ''}
+							#{if @type is \Cardinal then 'DaFunk.extend(this, Tone);' else ''}
+							#{if @type is \Mutable then 'DaFunk.extend(this, Timing);' else ''}
+							#{if @type is \Fixed then 'DaFunk.extend(this, Symbolic);' else ''}
 							#{@encantador}.superclass.call(this, book, _bp, key, opts);
 						}
 						/*
 						if(embodies) {
 							for(var i in _deps.embodies) {
-								ToolShed.extend(prototype, book.poetry['#{@encantador}'].prototype);
+								DaFunk.extend(prototype, book.poetry['#{@encantador}'].prototype);
 							}
 						}
 						*/
-						ToolShed.extend(prototype, _blueprint.machina);
+						DaFunk.extend(prototype, _blueprint.machina);
 						return #{@encantador};
 					}(book.poetry['#{@encantador}']));
 					book.poetry['#{@encantador}']['#{@incantation}'] = #{@incantation};

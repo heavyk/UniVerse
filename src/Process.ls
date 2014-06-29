@@ -65,7 +65,7 @@ class Process extends Fsm
 			_process = @_process
 			if typeof process.memory[@inception] is \undefined
 				process.memory[@inception] = new ExperienceDB @inception
-			#OPTIMIZE: this could be potentially costly to call ToolShed.extend ... I dunno...
+			#OPTIMIZE: this could be potentially costly to call DaFunk.extend ... I dunno...
 			#OPTIMIZE: perhaps instead of eval, we should use new Function
 			if typeof process.poetry[@implementation] is \undefined
 				eval """
@@ -74,15 +74,15 @@ class Process extends Fsm
 						var prototype = extend$((import$(#{@implementation}, superclass).displayName = '#{@implementation}', #{@implementation}), superclass).prototype, constructor = #{@implementation};
 						function #{@implementation} (process, _eth, key, opts) {
 							if(!(this instanceof #{@implementation})) return new #{@implementation}(key, opts);
-							//#{if @type is \Cardinal then 'ToolShed.extend(this, DefineTone);' else ''}
-							//#{if @type is \Mutable then 'ToolShed.extend(this, DefineTiming);' else ''}
-							//#{if @type is \Fixed then 'ToolShed.extend(this, DefineSymbolic);' else ''}
+							//#{if @type is \Cardinal then 'DaFunk.extend(this, DefineTone);' else ''}
+							//#{if @type is \Mutable then 'DaFunk.extend(this, DefineTiming);' else ''}
+							//#{if @type is \Fixed then 'DaFunk.extend(this, DefineSymbolic);' else ''}
 							#{@implementation}.superclass.call(this, process, _eth, key, opts);
 						}
-						ToolShed.extend(prototype, _process.machina);
+						DaFunk.extend(prototype, _process.machina);
 						return #{@implementation};
 					}(Motivator));
-					ToolShed.extend(#{@implementation}, Magnetism);
+					DaFunk.extend(#{@implementation}, Magnetism);
 					process.poetry['#{@implementation}'] = #{@implementation};
 				}())
 				"""
@@ -94,19 +94,19 @@ class Process extends Fsm
 						var embodies = _deps.embodies, prototype = extend$((import$(#{@implementation}, superclass).displayName = '#{@implementation}', #{@implementation}), superclass).prototype, constructor = #{@implementation};
 						function #{@implementation} (key, opts) {
 							if(!(this instanceof #{@implementation})) return new #{@implementation}(key, opts);
-							#{if @type is \Cardinal then 'ToolShed.extend(this, Tone);' else ''}
-							#{if @type is \Mutable then 'ToolShed.extend(this, Timing);' else ''}
-							#{if @type is \Fixed then 'ToolShed.extend(this, Symbolic);' else ''}
+							#{if @type is \Cardinal then 'DaFunk.extend(this, Tone);' else ''}
+							#{if @type is \Mutable then 'DaFunk.extend(this, Timing);' else ''}
+							#{if @type is \Fixed then 'DaFunk.extend(this, Symbolic);' else ''}
 							#{@implementation}.superclass.call(this, process, _eth, key, opts);
 						}
 						/*
 						if(embodies) {
 							for(var i in _deps.embodies) {
-								ToolShed.extend(prototype, process.poetry['#{@implementation}'].prototype);
+								DaFunk.extend(prototype, process.poetry['#{@implementation}'].prototype);
 							}
 						}
 						*/
-						ToolShed.extend(prototype, _process.machina);
+						DaFunk.extend(prototype, _process.machina);
 						return #{@implementation};
 					}(process.poetry['#{@implementation}']));
 					process.poetry['#{@implementation}']['#{@inception}'] = #{@inception};

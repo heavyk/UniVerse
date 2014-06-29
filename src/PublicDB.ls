@@ -43,7 +43,7 @@ Http = require \http
 #Schema = require 'mongoose/lib/blueprint'
 #Model = require 'mongoose/lib/blueprint'
 
-{ Fsm, Fabuloso, ToolShed, _, DaFunk } = require 'MachineShop'
+{ Fsm, ToolShed, _, DaFunk } = require 'MachineShop'
 { Debug } = ToolShed
 
 # UniVerse = require '../UniVerse'
@@ -323,7 +323,7 @@ set_path = (obj, str, val) ->
 class LocalDB extends Fsm
 	(options) ->
 		# debugger
-		ToolShed.extend @, Fabuloso
+		DaFunk.extend @, Fsm.Empathy
 		super "LocalDB"
 
 	states:

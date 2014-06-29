@@ -25,9 +25,9 @@ ToolShed.searchDownwardFor 'package.json', (err, path) ->
 	found = 0
 	dir = Path.dirname path
 	# console.log dir + '\n' + ('=' * dir.length) + '\n'
-	walker = Walk dir, {+follow_symlinks}
+	walker = Walk dir # , {+follow_symlinks}
 	walker.on \file, (path, st) ->
-		if (path.substr -ext.length) is ext
+		if (path.substr -ext.length) is ext and (path.indexOf '/old/') isnt 0
 			line = 1
 			emitted_filename = false
 			s = (SliceFile path).slice!

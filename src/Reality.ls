@@ -245,7 +245,7 @@ Reality.modifiers =
 				if typeof opts.el isnt \undefined
 					self._el = opts.el
 					delete opts.el
-				ToolShed.extend self, opts
+				DaFunk.extend self, opts
 
 			switch _bp.type
 			| \Cardinal =>
@@ -465,9 +465,9 @@ Reality.modifiers =
 		cmds:
 			make_new: (erase_vals) ->
 				if erase_vals
-					@_xp = ToolShed.extend {}, @_xp_tpl
+					@_xp = DaFunk.extend {}, @_xp_tpl
 				else
-					@_xp = ToolShed.extend {}, @_xp
+					@_xp = DaFunk.extend {}, @_xp
 					# because extend removes all keys starting with _, these shouldn't exist
 					# delete @_xp._key
 					# delete @_xp._id
