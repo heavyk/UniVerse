@@ -3,18 +3,9 @@ Library = require './Library' .Library
 
 { Fsm, ToolShed, _ } = require 'MachineShop'
 
-# TODO: I would really like to abstract the url and stuff
-# TODO: I would really lke to make this more complete... like make a blueprint, then a poem, and shit
-
 class Session extends Fsm
 	(@refs, key) ->
-		# debugger
-		# refs.library = @library = new Library refs, name: \sencillo # host: ...
 		@current = {}
-
-		# console.log "TODO: first connect to PublicDB/UniVerse and get the session bp?"
-		# @currency = new Currency
-		# @library = new Library
 		super "Session(key)"
 		@debug "hello, we are a session. id: %s", key
 
@@ -32,22 +23,18 @@ class Session extends Fsm
 				@debug "do nothing... wait to see whoami"
 				@exec 'persona.whoami' (err, session) ~>
 					@debug "executed whoami..."
-					# debugger
 					if err
 						name = @default
 						@debug "using default poem: %s", name
-						# UniVerse.book.exec \open name
 					else
 						name = @current.poem
 						@debug "using session poem: %s", name
 
 			'persona.whoami': (cb) ->
-				# debugger
 				$.ajax {
 					url: "/db/whoami"
 					contentType: "application/json"
 					success: (result) ~>
-						# @current = result
 						@current = {key: result.key}
 						# later, this should be the value of Session[key]
 						# I also need to redo this so it's a valid address, and give the person back the private key:
@@ -56,39 +43,28 @@ class Session extends Fsm
 						# server sends back the session encrypted to the public key with the pub/priv keys for that session
 						# this will remove almost all fraud, accept for compromised random number generators
 						# to get around bad random number generators, I will create entropy by using hashes of data downloaded combined with the machine random number generator
+						# ----
+						# wow, I was really stoned when I wrote that, but I'll leave it for the moment... will delete soon... lol
 
 						if result.persona
 							@current.persona = result.persona
-							# @current.mun = result.mun
-							# @current.poem = result.poem
 							@current.now = result.now
 							@current.ident = result.ident
 						if typeof cb is \function => cb.call @, void, @current
 						@transition if result.persona => \authenticated else \not_authenticated
-						# @refs.UniVerse.emit \auth, void, result
 
 					error: (res) ~>
 						result = JSON.parse res.responseText
 						if typeof cb is \function => cb.call @, result
 						@transition \not_authenticated
-						# @refs.UniVerse.emit \noauth, result
 				}
 
 		authenticated:
-			onenter: ->
-				@debug "we're authenticated"
-				# if key = @key
-				# 	@emit \key key
-				# else @emit \!key
-				# if persona = @persona
-				# 	@emit \persona persona
-				# else @emit \!persona
-				# if mun = @mun
-				# 	@emit \mun mun
-				# else @emit \!mun
+			# onenter: ->
+			# 	@debug "we're authenticated"
 
 			'mun.set': (id, cb) ->
-				console.error "TODO"
+				@debug.todo "TODO: mun.set working properly :)"
 				$.ajax {
 					url: "/db/whoami"
 					type: \post
@@ -104,13 +80,10 @@ class Session extends Fsm
 
 					error: (result) ~>
 						if typeof cb is \function => cb.call @, result
-						# @refs.UniVerse.emit \error, err, "ERROR: unable to switch mun"
 				}
 
 			'mun.create': ->
 				@debug.todo "add a function to create a new mun"
-				debugger
-				# @emit \mun id
 
 			'persona.logout': (cb) ->
 				$.ajax {
@@ -132,9 +105,6 @@ class Session extends Fsm
 		not_authenticated:
 			onenter: ->
 				@debug "session is ready now"
-				# @emit \!key
-				# @emit \!persona
-				# @emit \!mun
 
 			'persona.register': (opts, cb) ->
 				$.ajax {
@@ -169,7 +139,6 @@ class Session extends Fsm
 					data: JSON.stringify username: opts.user, password: opts.password
 					contentType: "application/json"
 					success: (result) ~>
-						# debugger
 						@debug "Welcome %s" result.ident
 						if result.persona
 							@current.persona = result.persona
@@ -196,5 +165,3 @@ class Session extends Fsm
 
 
 export Session
-
-# TODO: implement mozilla's Persona

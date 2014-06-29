@@ -28,7 +28,8 @@ Url = require \url
 
 { Fsm, Fabuloso, ToolShed, _ } = require 'MachineShop'
 { Debug } = ToolShed
-{ PublicDB, LocalDB, Blueprint } = require './PublicDB'
+# { PublicDB, LocalDB, Blueprint } = require './PublicDB'
+{ PublicDB, LocalDB } = require './PublicDB'
 
 Library = require './Library' .Library
 # Session = require './Session' .Session

@@ -9,7 +9,6 @@ window.Machina = Machina
 
 Tone =
 	'also|initialize': ->
-		console.log "load up the voice that we want here... it'll have its own 'look'"
 		# get the bp from the universe just like 'Meaning' does
 		# then, overlay the voice on top of the meaning (or the verse)
 		for k, p of @_bp._blueprint.layout
@@ -98,7 +97,6 @@ Tone =
 								v = v.toString 16
 								if v.length < 2 => '0'+v else v
 							@set part, iin.value = "#{p e.r}#{p e.g}#{p e.b}"
-							if iin.value.length < 6 then console.log "error:", e
 						pop = window.$ b .popover {
 							toggle: \popover
 							content: -> cp.el
@@ -108,7 +106,6 @@ Tone =
 					if sv.oninfo => E \span c: \help-block, sv.oninfo
 			| otherwise =>
 				changed_val = (e) ~>
-					# console.log "onchange", if typeof sv.onchange is \function and typeof (val = sv.onchange.call(voice, voice._xp, e)) isnt \undefined => val else e.target.value
 					voice.set part, if typeof sv.onchange is \function and typeof (val = sv.onchange.call(voice, voice._xp, e)) isnt \undefined => val else e.target.value
 				switch type
 				| \string =>
@@ -231,8 +228,7 @@ Timing =
 
 		quest: (key, opts) ->
 			if @quest
-				debugger
-				console.log "this is probably an error because the event listeners need to be removed from the old quest and we neeed to garbage collect ot correctly"
+				@debug.error "this is probably an error because the event listeners need to be removed from the old quest and we neeed to garbage collect ot correctly"
 			@quest = q = new Quest @_bp, key, opts
 			verse = @
 			q.on \* !->
@@ -329,14 +325,13 @@ class Meaning extends Fsm
 			if key
 				self.exec \quest, key, opts#, self._xp
 		| \Abstract =>
-			debugger
-			console.log "type is changed to significance"
+			@debug.error "type is changed to significance"
 			if key
 				self.transition key
 		| \Cardinal =>
 			@debug.todo "we need cardinal types..."
 			if typeof key is \string
-				console.log "load up the exp using this id"
+				@debug.todo "load up the exp using this id"
 			fallthrough
 		| \Fixed => fallthrough
 		| otherwise =>
@@ -345,7 +340,6 @@ class Meaning extends Fsm
 	render: ->
 		"this is #{@namespace}"
 	router: (path, is_back) ->
-		# console.error "route", path, is_back
 		window_href = window.location.href + ''
 		window_href_base = window_href.substr 0, window_href.lastIndexOf '/'
 		proto = cur_proto
@@ -424,7 +418,7 @@ class Meaning extends Fsm
 				v = v.call this, s
 		return v
 	set: (path, val) ->
-		# console.log "set:", path, val, @_xp
+		@debug "set: %s %s %s", path, val, DaFunk.stringify @_xp
 		assert @_bp._blueprint.type isnt \Abstract
 		# TODO: validate
 		# TODO: check for getters/setters
@@ -461,8 +455,7 @@ class Meaning extends Fsm
 		if @_is_new
 			d = @exp true
 			if d._rev
-				debugger
-				console.error "TODO: you have a bug somewhere... you shouldn't have a _rev ever!!"
+				@debug.error "TODO: you have a bug somewhere... you shouldn't have a _rev ever!!"
 			@memory.create @_xp, (err, xp) ~>
 				if err
 					@emit \error err
@@ -568,7 +561,6 @@ class Meaning extends Fsm
 			path = e.attemptedState
 			poem = @
 			if path.0 is '/' and poem._regex_routes
-				console.log "checking routes", poem._regex_routes
 				_.each poem._regex_routes, (regex, p) ->
 					if ~path.indexOf regex.at_least
 						m = path.match regex
@@ -578,7 +570,6 @@ class Meaning extends Fsm
 							_.each m, (p, i) -> params[regex.keys[i].name] = p
 							url = e.args.0
 							url.params = params
-							console.log "FOUND MATCH", p, params, e
 							poem.transition p, url
 							return false
 			#@transition \invalidstate
@@ -702,14 +693,12 @@ class Meaning extends Fsm
 				throw new Error "we don't know what kind of key this is: #{id} ... unable to load"
 				# if typeof id is \object
 
-				console.log "going to extend this with the "
 				@debug.todo "check to see if it has a key"
 				@debug.todo "@exec"
 
 	states:
 		uninitialized:
 			onenter: ->
-				console.log "Meaning::uninitialized"
 
 		loading:
 			render: (E) ->
@@ -717,40 +706,32 @@ class Meaning extends Fsm
 
 		new:
 			onenter: ->
-				console.log "we are a new something!", @_bp.namespace
-				console.log "states", @states
 
 			render: (E) ->
 				"TODO: new #{@namespace}... add the voice"
 
 
 			validate: ->
-				console.log "TODO: validate the new word! this should be the voice..."
 
 
 		edit:
 			onenter: ->
-				console.log "we're going to edit the experience: #{@id}"
 
 			render: (E) ->
 
 
 		ready:
 			onenter: ->
-				console.log "Meaning::ready..."
-				console.log "Meaning: waiting for a command or something"
 
 			render: (E) ->
 				E \h4 null "Meaning::ready", "(this is a bug because it stould initialize in the uninitialized state)"
 
 			validate: ->
-				console.error "TODO: @validate state??"
+				@debug.error "TODO: @validate state??"
 				_.each @_bp.layout, (v, k) ->
-					console.log "verify path", k, v
 
 		invalidstate:
 			onenter: (e) ->
-				console.log "invalid state!!", e.attemptedState
 
 			render: (E) ->
 				E \div c: \todo data: todo: "new_page_editor", "invalid state: TODO: make a new page editor"
@@ -777,10 +758,8 @@ class Meaning extends Fsm
 Magnetism =
 	emit: ->
 		debugger
-		console.log "TODO"
 
 embody_bp = (bp) ->
-	console.log "embody #bp", bp
 	unless bp
 		throw new Error "can't extend empty bp #bp"
 	embody_bps = []
@@ -801,7 +780,6 @@ embody_bp = (bp) ->
 				embody_bps.push bpz
 				embody_bp_.push bpz.incantation
 
-		console.log "embodying #{bp.incantation} with...", embody_bp_.join ','
 
 		embody_bps.unshift get_bp bp.encantador, bp.encantador
 		embody_bp_.unshift bp.encantador
@@ -848,23 +826,22 @@ class Blueprint extends Fsm
 		@_blueprint = opts
 
 		unless @incantation
-			console.error "you need a incantation for your blueprint!"
+			@debug.error "you need a incantation for your blueprint!"
 			throw new Error "you need a incantation for your blueprint!"
 
 		unless @encantador
-			console.error "you need a encantador for your blueprint!"
+			@debug.error "you need a encantador for your blueprint!"
 			throw new Error "you need a encantador for your blueprint!"
 
 		if not @version or @version is \*
 			@version = \latest
 
-		console.debug "Blueprint(#{@fqvn = @encantador+':'+@incantation+'@'+@version})"
+		@debug "Blueprint(#{@fqvn = @encantador+':'+@incantation+'@'+@version})"
 		super "Blueprint(#{@fqvn = @encantador+':'+@incantation+'@'+@version})"
 
 	imbue: (book) ->
 		assert book instanceof StoryBook
 		if @state is \ready
-			console.log "we're gonna make a new imbuement here..."
 			var blueprint_inst
 			library = @refs.library #.poetry
 			_bp = @
@@ -924,7 +901,7 @@ class Blueprint extends Fsm
 					book.add_poetry('#{@encantador}', '#{@incantation}', '#{@version}', #{@incantation});
 				}())
 				"""
-			console.debug "_deps", @_deps
+			@debug "_deps", @_deps
 
 			_.each @_deps, (bp) ->
 				if typeof bp is \obje and (not book.poetry[@encantador] or not book.poetry[@encantador][@incantation])
@@ -932,7 +909,7 @@ class Blueprint extends Fsm
 			return blueprint_inst
 		else
 			@debug.error "you can't imbue a blueprint that's not yet ready!: #{@fqvn}"
-			console.debug "not ready!!" "encantador", @encantador, "incantation", @incantation
+			@debug "not ready!!" "encantador", @encantador, "incantation", @incantation
 
 	states:
 		uninitialized:
@@ -940,7 +917,6 @@ class Blueprint extends Fsm
 				process_bp = ~>
 					if not bp = @_blueprint
 						debugger
-						console.log "wtf mate? the blueprint doesnt exist"
 						return
 					@type = if bp.type then bp.type else
 						switch bp.encantador
@@ -951,7 +927,7 @@ class Blueprint extends Fsm
 					@layout = bp.layout || {}
 					@_deps = {}
 					_deps = DaFunk.embody {}, bp.poetry
-					console.debug "deps", _deps
+					@debug "deps", _deps
 					long_incantation = @fqvn
 					embodies = bp.embodies
 					if typeof embodies is \string
@@ -976,7 +952,6 @@ class Blueprint extends Fsm
 
 					if embodies
 						_.each embodies, (incantation, ii) ->
-							console.log "embodies", embodies, incantation
 							task.push "getting embodied: #{incantation}" (done) ->
 								unless incantation
 									debugger
@@ -991,10 +966,10 @@ class Blueprint extends Fsm
 
 					_.each _deps, (deps, encantador) ~>
 						_.each deps, (version, incantation) ~>
-							console.debug "getting element: #{encantador}:#{incantation}@#{version}"
+							@debug "getting element: #{encantador}:#{incantation}@#{version}"
 							task.push "getting element: #{encantador}:#{incantation}@#{version}" (done) ->
 								UniVerse.library.exec \fetch {encantador, incantation, version}, @refs.book, (err, bp) ~>
-									console.debug "got element: #{encantador}:#{incantation}@#{version}"
+									@debug "got element: #{encantador}:#{incantation}@#{version}"
 									@_deps[bp.fqvn] = bp
 									done!
 
@@ -1003,10 +978,9 @@ class Blueprint extends Fsm
 				req = Http.get {
 					path: "/bp/#{@encantador}/#{@incantation}#{if @version and @version isnt \latest => '?version=' + @version else ''}"
 				}, (res) !~>
-					console.log "we are requesting...."
 					data = ''
 					res.on \error (err) ->
-						console.error "we've got an error!!", err
+						@debug.error "we've got an error!!", err
 
 					res.on \data (buf) ->
 						data += buf
@@ -1029,15 +1003,12 @@ class Blueprint extends Fsm
 							@transition \error
 
 		ready:
-			onenter: ->
-				console.log "blueprint ready", @incantation
-				@emit \ready
-
 			verify: (path, val) ->
 				#TODO: add path splitting by '.'
+
 		error:
 			onenter: ->
-				console.error "you have tried to load a blueprint which wasn't able to be fetched", @incantation
+				@debug.error "you have tried to load a blueprint which wasn't able to be fetched", @incantation
 
 
 export Meaning

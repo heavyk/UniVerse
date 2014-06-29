@@ -8,22 +8,7 @@ Session = require './Session' .Session
 # make the ICropper a part of the image bp
 # Slick = require \rslnautic-slick .Slick
 
-{ Fsm, ToolShed, Fabuloso, _ } = require 'MachineShop'
-
-# this does almost everything this guy wants:
-# http://mvalente.eu/category/programming/
-
-# for later, when objects change their values and we need to pay the XP for the change
-# class Experience extends Scope
-
-# for later, when we can save xp into the universe for changes to the Experience
-# class ExperienceDB extends Fsm
-
-# for later, when we can have a market
-# class Currency extends Fsm
-
-# for later, when we get blueprints out of the ether
-# class EtherDB extends Fsm
+{ Fsm, ToolShed, _ } = require 'MachineShop'
 
 # the poetry book contains the window and everything in it
 class StoryBook extends Fsm
@@ -71,27 +56,15 @@ class StoryBook extends Fsm
 				book.poem.exec \make_new
 				book.poem.transition '/'
 		@session.on \state:authenticated ->
-			console.log "mun:", book.session.mun
 			path = Url.parse window.location.href+''
 			toState = if path.path isnt @path => path.path else @path
-			console.log "AUTHENTICATED! persona", book.session.persona, "poem", book.poem
-			# self.emit \transition {fromState: @state, toState, args: []}
-			# poem = self.states[self.state].render
-			# poem =
 			if book.poem
 				book.poem.exec \load book.session.persona
-			# book.poem.once 'state:ready' ->
-			# 	poem.transition toState
-			# else
-			# 	self.transition toState
-		# refs.library = @library = new Library refs, name: \sencillo # host: ...
-		# 2. unless id, load the StoryBook with the persona._id
-		# 3.
 		if @renderers
 			@_renderers = @renderers
 			delete @renderers
 			@_parts = {}
-		@books = {} # I don't think this is used...
+		@books = {} #OPTIMIZE: I don't think this is used...
 		@poetry = {}
 		@memory = {}
 		@poems = []
@@ -118,12 +91,11 @@ class StoryBook extends Fsm
 		if typeof @poetry[encantador] isnt \function
 			throw new Error "you must make the encantador first ... not happens"
 
-		console.debug "setting:", encantador, incantation, version, fn
+		# console.debug "setting:", encantador, incantation, version, fn
 		@poetry[encantador][incantation] = fn
 
 	initialize: ->
 		console.log "storybook initialize!!!!!!"
-		# debugger
 
 	_class: \StoryBook
 	renderers:
@@ -139,20 +111,14 @@ class StoryBook extends Fsm
 			Sandra: \latest
 	_render: -> @_el
 	render: (E) ->
-		# E \div null "woahhh"
+		console.log "whattt??? we shouldn't be here... remove me"
 		debugger
 		if (s = @state) and (ss = @states[s])
-			# debugger
 			if ss instanceof Fsm
 				debugger
 			else ss._el
 		else "yay!!!"
 
-	# poem:~
-	# 	-> if @poem => @poem.key else null
-	# 	# (key) ->
-	# 	# 	if @_poem and key isnt @_poem.key
-	# 	# 		@session.exec \mun.set
 
 	eventListeners:
 		transition: (e) ->
@@ -161,7 +127,6 @@ class StoryBook extends Fsm
 			cE = self.refs.window.cE
 			aC = self.refs.window.aC
 			path = self.state
-			# console.error "priorState", e.fromState, e.fromState
 			execs = Object.keys @states[e.toState]
 			_.each @_derivitaves, (v, derivitave) ~>
 				d_name = "derivitave.#derivitave"
@@ -170,11 +135,8 @@ class StoryBook extends Fsm
 
 			_.each self._renderers, (renderer, i) ~>
 				if typeof self.state isnt \undefined
-					# if ~self.state.indexOf '@'
-					# 	debugger
 					if typeof (r = self.states[path][renderer]) isnt \undefined
 						data = e.args.0
-						# console.error "priorState", e.fromState
 						if typeof e.fromState is \undefined
 							aC self._el, self._parts[renderer] = if typeof r is \function => r.call(self, cE, data) else r
 						else if el = self._parts[renderer]
@@ -199,8 +161,6 @@ class StoryBook extends Fsm
 								UniVerse.poem = data.poem
 								# eventually support hash tags on older browsers:
 								# https://github.com/defunkt/jquery-pjax
-								# console.error "self.transition.pushState"
-								# console.error "pushing state", data.path, data
 								@push_path data, data.title + ""
 					#else if typeof self.priorState is \undefined
 					# console.error "you have defined a renderer '#renderer', but it is not initialized in the '#{poem.state}' state"
@@ -224,15 +184,13 @@ class StoryBook extends Fsm
 
 			'derivitave.browser': !->
 				$ window .bind \click, (e) ~>
-					# console.log "click", e
 					target = e.target
-					if target.form# or ((c = target.className) and ~c.indexOf('disabled') and ~(c.split ' ').indexOf 'disabled')
+					if target.form # or ((c = target.className) and ~c.indexOf('disabled') and ~(c.split ' ').indexOf 'disabled')
 						e.preventDefault!
 						return false
 					if e.metaKey or e.ctrlKey or e.shiftKey or e.defaltPrevented or (e.button and e.button isnt 1) or typeof target.href is \undefined
 						return
 					e.preventDefault!
-					# console.log "click on link:", target.href
 					el = target
 					path = el.href
 					if ~path.indexOf '://'
@@ -243,29 +201,24 @@ class StoryBook extends Fsm
 							setTimeout ->
 								if machina.states[machina.state][path]
 									machina.exec path, e
-								else #if machina.states[path]
-									# if path is '/logout'
-									# 	debugger
+								else
 									machina.transition path
 							, 100
 							# we will assume that we don't want to adjust above elements.
 							# if the above element wants to listen, then it can just listen....
 							e.stopImmediatePropagation!
 							return false
-							# return false
-						# if el is window
-						# 	break
 					while el = el.parentNode
-					# debugger
 					if path
 						debugger
+						console.log "wtf?!?! why?"
 						@route path
 
 				$ window .bind \popstate, (evt) !~>
-					console.log "popstate.evt", evt+""
+					# console.log "popstate.evt", evt+""
 					if url = evt.originalEvent.state
-						console.log "popstate", evt, url
-						console.log "TODO!!!! - back button!"
+						# console.log "popstate", evt, url
+						@debug.todo "TODO!!!! - we really need a - back button! - lol"
 						# console.log "poetry", poetry, poetry?mun
 						# console.log "::", url, evt.originalEvent
 						# if @mun isnt url.mun
@@ -279,14 +232,13 @@ class StoryBook extends Fsm
 						console.error "POP STATE"
 					evt.preventDefault!
 
-
-
 			render: (E) ->
 				E \div null "main..."
 
 	cmds:
 		login: (opts, cb) ->
-			debugger
+			throw new Error "not yet implemented dude"
+			# TODO: implement mozilla persona - well :)
 			@session.exec \persona.login (opts, cb) ->
 
 
@@ -294,28 +246,14 @@ class StoryBook extends Fsm
 			@session.exec \persona.logout ->
 
 		open: (name, version, path, cb) ->
-			console.log "if the poem is not downloaded, download it", &
-			console.log "once the poem is downloaded and loaded, switch to it"
+			# console.log "if the poem is not downloaded, download it", &
+			# console.log "once the poem is downloaded and loaded, switch to it"
 			if typeof name isnt \string
 				throw new Error "we can't figure out the name of the poetry you're trying to load"
 			if typeof fqvn isnt \string
 				fqvn = name
 
-			# if typeof version is \function
-			# 	cb = version
-			# 	path = version = void
-			# if typeof path is \function
-			# if not path
-			# 	path = '/'
-
-			# @states[name] = new Book refs, fqvn
-			# bp = UniVerse.archive.get \Poem, name
-			# debugger
-			# UniVerse.archive.exec \fetch "Poem/#name", (err, bp) ->
-
 			UniVerse.library.exec \fetch {encantador: "Poem" incantation: name, version, book: @}, (err, bp) ~>
-				# bp.refs <<< @refs
-				# debugger
 				bp.once_initialized ~>
 					@debug "POEM INITIALIZED.... wait for a session"
 					@session.once_initialized !~>
@@ -327,7 +265,7 @@ class StoryBook extends Fsm
 						@debug "loading poem '#noem' with sess_id: #sess_id", bp
 						@poem = poem = @poetry.Poem[name](sess_id)
 						poem.on \transition (evt) ~>
-							console.log "transition evt", evt.toState
+							# console.log "transition evt", evt.toState
 							if evt.toState.indexOf('/') is 0
 								console.log "set the path!!", evt.toState
 								@push_path {poem: poem.fqvn, path: evt.toState}, poem.title
@@ -380,6 +318,7 @@ class StoryBook extends Fsm
 						@debug.todo "load up the path into the poem"
 
 		activate: (fqvn) ->
+			throw new Error "not yet implemented - poem switching"
 			# if not poem = @poems[fqvn]
 			debugger
 
@@ -394,29 +333,8 @@ class StoryBook extends Fsm
 	route: (path, is_back) ->
 		window_href = window.location.href + ''
 		window_href_base = window_href.substr 0, window_href.lastIndexOf '/'
-		console.error "routing path", path, is_back, window_href
 		mun = if @session.current => @session.current.mun else null
-		poem = @state #@session.poem
-		# if ~path.indexOf window_href_base
-		# 	path = path.substr window_href_base.length
-		# else
-		# 	if ~path.indexOf "://"
-		# 		proto = path.split '://'
-		# 		if proto.length > 1
-		# 			[proto, path] = proto
-		# 		else
-		# 			proto = \http
-		# 			path = proto.0
-		# 	#[host, path] = path.split '/'
-		# 	if (i = path.indexOf '/') > 0
-		# 		host = path.substr 0, i
-		# 		path = path.substr i
-		# 	else if i is 0
-		# 		host = cur_host
-		# 		path = path
-		# 	else
-		# 		host = path
-		# 		path = '/'
+		poem = @state
 		url = Url.parse path
 		if url.path
 			path = url.path
@@ -428,63 +346,32 @@ class StoryBook extends Fsm
 			querystring = path.slice i + 1
 			path = path.slice 0, i
 
-		console.log "route:", path, "->", @path
+		@debug "route:", path, "->", @path
 		if path isnt @path
-			console.error "before transition", path, {poem, path, mun}
 			poem = @states[@state].render
-			# debugger
 			poem.transition path, {poem, path, mun}
-			console.log "after transition"
 
 		switch proto
-		| \affinaty =>
-			console.log "affinaty router... #{proto}:#{poem} @ path: #{path}"
-			# t_cur_file = Path.resolve \lib, poem, poem+'.js'
-			# if cur_file isnt t_cur_file
-			# 	if cur_watcher
-			# 		cur_watcher.stop!
-			# 	cur_file := t_cur_file
-			# cur = require t_cur_file
-			/*
-			cur_watcher := Fs.watchFile t_cur_file, {interval: 200}, ~>
-				console.log "file changed", &
-				_.each global.require.cache, (m, k) ~>
-					if ~k.indexOf(cur_file) or ~k.indexOf("PublicDB") or ~k.indexOf("Poem") or ~k.indexOf("arango")
-						delete global.require.cache[k]
-				cur = require cur_file
-				console.log "reloading...", path, refs
-				refs.poem.transitionSoon path
-			*/
-			# for now all curs are splash
-		# | otherwise =>
-		# 	console.error "sorry the #{proto} protocol isn't supported yet"
-		# 	return
-		# path
+		| \poem =>
+			console.log "poem router... eventually this will become a its own poem ... eg. poem://saviour/emanuel/muthta/fuckin/christ/is/awesome will oviously route 'emanuel/muthta/fuckin/christ/is/awesome' inside of the 'saviour' poem - obviously :) lol"
+			console.log " #{proto}:#{poem} @ path: #{path}"
+			debugger
+			throw new Error "not yet implemented - sorry"
+
+
+		# this is kinda old code... don't do this. it'll change
 		switch path
 		| \/logout =>
 			@exec \logout
 
 		| \/disconnected =>
-			console.log "TODO: show disconnected thing..."
+			# TODO: show disconnected thing...
 			refs.poem.emit \disconnected
 			aC null, lala = cE \div c: 'modal-backdrop fade in'
 			_universe.on \ready ~>
 				$ lala .remove!
 
 		console.log "we're done...", is_back
-		# unless is_back
-		# 	# the state can be an object:
-		# 	# window.history.pushState href: "#{proto}://#{obj}#{path}", '', #window_href
-		# 	console.log "we're done... pushing state:", path, is_back
-		# 	console.log "poem", poem
-		# 	console.log "mun", mun
-		# 	console.log "path", path
-		# 	@poem = poem
-		# 	@mun = mun
-		# 	@path = path
-		# 	window.history.pushState {poem, mun, path}, 'a title', path
 
-# console.log "before extend:", StoryBook::initialize
-# debugger
-ToolShed.extend StoryBook::, Fabuloso
+ToolShed.extend StoryBook::, Fsm.Empathy
 export StoryBook

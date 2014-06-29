@@ -1,15 +1,13 @@
 
 Path = require \path
 Url = require \url
-# Fs = require \fs
-
 
 { Fsm, ToolShed, _ } = require 'MachineShop'
 { Debug } = ToolShed
 
-
 var UniVerse
 
+# is this even used any more??? - investigate the router
 load_bps = (refs) ->
 	# clear cache
 	Blueprint._ = {}
@@ -30,14 +28,11 @@ export router = (path, refs) ->
 		throw err
 
 	content_el = doc.getElementById 'content'
-	console.log "router path", path
-	console.log "content_el", content_el
 	Poem "affinaty", {$, window}
 	window.Poem = Poem
 	load_bps refs
 
 	content_el.innerHTML = ''
-	console.log "path: #{path}"
 	path = path.split '/'
 	if path.0 is ''
 		path.splice 0, 1
