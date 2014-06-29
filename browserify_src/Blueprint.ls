@@ -836,7 +836,6 @@ class Blueprint extends Fsm
 		if not @version or @version is \*
 			@version = \latest
 
-		@debug "Blueprint(#{@fqvn = @encantador+':'+@incantation+'@'+@version})"
 		super "Blueprint(#{@fqvn = @encantador+':'+@incantation+'@'+@version})"
 
 	imbue: (book) ->

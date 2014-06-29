@@ -13,9 +13,9 @@ $(document).ready(function($) {
 	require('path-to-regexp');
 	// require('./lala-components/icropper/icropper');
 
-	console.log("gonna init soon...")
+	// console.log("gonna init soon...")
 	setTimeout(function() {
-		console.log("gonna init...")
+		// console.log("gonna init...")
 		blueshift = require('./lib/init');
 		blueshift.init({window: window, '$': $, require: require})
 	}, 30)

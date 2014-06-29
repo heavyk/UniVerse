@@ -10,7 +10,6 @@ debug = Debug \PublicDB
 level-js = require \level-js
 export class LocalDB extends Fsm
 	(options) ->
-		console.log "options", options
 		unless name = options.name
 			throw new Error "you must provide a 'name' for your LocalDB"
 		@storage = level-js name
@@ -46,7 +45,7 @@ export class LocalDB extends Fsm
 					dfd.then cb
 				dfd)(k)
 	@@::query = (query) ->
-		console.log "TODO: query the LocalDB/PubliCDB"
+		@debug.todo "query the LocalDB/PubliCDB"
 
 export PublicDB = (opts, db_ready) ->
 	debug = Debug "PublicDB"
@@ -56,8 +55,7 @@ export PublicDB = (opts, db_ready) ->
 		opts = {}
 
 	unless name = opts.name
-		console.error "you need a name for your database!"
-		throw new Error "you need a 'name' for your database"
+		@debug.error "you need a name for your database!"
 
 	if db = PublicDB.dbs[opts.name]
 		return db
@@ -74,7 +72,7 @@ export PublicDB = (opts, db_ready) ->
 		path: db_path = Path.join \db, opts.name
 
 		get: (encantador, incantation, version, opts) ->
-			console.log "PublicDB.get", &
+			@debug "PublicDB.get %j", &
 			if typeof version is \object
 				opts = version
 				version = opts.version
@@ -88,29 +86,30 @@ export PublicDB = (opts, db_ready) ->
 
 			long_incantation = encantador+':'+incantation+'@'+version
 			if typeof (bp = Blueprint._[long_incantation]) is \undefined
-				console.log "new Blueprint"
+				@debug "new Blueprint"
 				bp = new Blueprint refs, {encantador, incantation, version}
 
-			console.log "PublicDB.get  <\- ", bp
+			@debug "PublicDB.get  <\- %s", long_incantation
 			return bp
 
 			task = @task 'initialize bp or whatever'
 			task.push (done) ->
 				bp.once_initialized done
 			task.end (err, res) ->
-				console.log "we have the bp (and supposedly the instance)", res
+				@debug "we have the bp (and supposedly the instance) now, YAY!"
+
 
 		patch: (obj) ->
-			console.error "TODO: object patching"
+			@debug.todo "object patching"
 
 		initialize: ->
-			console.log "initializing #{opts.name}"
+			@debug "initializing #{opts.name}"
 			@blueprints = {}
 			task = @task "initialize PublicDB(#{opts.name})"
 			task.push (done) ~>
 				@storage = new LocalDB {name}
 				@storage.once_initialized ~>
-					console.log "storage ready", &
+					@debug "storage ready"
 					done!
 
 			task.end (err, res) ~>
@@ -144,7 +143,7 @@ export PublicDB = (opts, db_ready) ->
 					@emit \ready
 
 				fetch: (fqvn, cb) ->
-					console.log "hello! we want to get", fqvn
+					@debug "hello! we want to get: %s", fqvn
 					if typeof fqvn is \string
 						fqvn = parse_fqvn fqvn
 					else if typeof fqvn isnt \object
@@ -162,10 +161,9 @@ export PublicDB = (opts, db_ready) ->
 
 				# XXX: this should be a node derivative
 				dump: ->
-					console.log "TODO: use the mongo functions to list out the collections", Mongoose.blueprints
 					# XXX: this should actually use a main task with branches
 					#  it's possible that this code isn't even fully working right... lol
-					debugger
+					throw new Error "redo this with DaFunk.stringify"
 					_.each Mongoose.blueprints, (blueprint, k) ~>
 						collection_path = Path.join db_path, blueprint.collection.name
 						ToolShed.mkdir collection_path, (err, dir) ~>

@@ -17,15 +17,15 @@ class ExperienceDB extends Fsm
 	states:
 		uninitialized:
 			onenter: ->
-				console.log "we're gonna connect now..."
+				@debug "we're gonna connect now..."
 
 		connected:
 			onenter: ->
-				console.log "connected to the database now.."
+				@debug "connected to the database now.."
 
 		disconnected:
 			onenter: ->
-				console.log "disconnected from the universe"
+				@debug "disconnected from the universe"
 
 	eventListeners:
 		found: (key, xp) ->
@@ -99,14 +99,14 @@ class ExperienceDB extends Fsm
 			if key
 				if assert and method is \delete
 					if ~@deleted.indexOf key
-						console.log "this shouldn't happen... kinda an insurance policy while testing"
+						@debug "this shouldn't happen... kinda an insurance policy while testing"
 						debugger
 					else
 						@deleted.push key
 				id += "/#key"
 				if @__request[key]
-					console.log "already saving... throttle this"
-					console.log "TODO: add 'saving' 'saved' 'save_timeout' events plus debounce with a cooldown to try again"
+					@debug "already saving... throttle this"
+					@debug "TODO: add 'saving' 'saved' 'save_timeout' events plus debounce with a cooldown to try again"
 					@debug.todo "re-request in x time"
 					# XXX: re-request in x time
 					throw new Error "WTF?!?!?!"
@@ -128,7 +128,7 @@ class ExperienceDB extends Fsm
 				data = ''; res.on \data (buf) -> if buf => data += buf
 
 				res.on \end ~>
-					console.log "done with the request:", method, id
+					@debug "done with the request:", method, id
 					@__request[key] = null
 					if res.statusCode is 200
 						# there should be a methid for an obj to register events
@@ -345,9 +345,9 @@ class Quest extends Fsm
 					js += "_.each(this._['#{vi}'], function(#{v}){\n"
 			| \FILTER =>
 				if ii.0.charAt(0) is '('
-					console.log "quickly parse the parens using a loop, then parse the expression into a function"
+					@debug "quickly parse the parens using a loop, then parse the expression into a function"
 					joined = ii.join ' '
-					console.log "this expression: '%s'", joined
+					@debug "this expression: '%s'", joined
 					throw new Error "filters with expressions not yet supported. we accept pull requests :)"
 
 					# parse the parens correctly
@@ -380,7 +380,7 @@ class Quest extends Fsm
 				ii = null
 
 		@book.memory[vi].on \forgotten (key, xp) ~>
-			console.log "forgot exp", key
+			@debug "forgot exp", key
 			# debugger
 			if ~(idx = @keys.indexOf key)
 				@emit \removedAt key, idx
@@ -388,7 +388,7 @@ class Quest extends Fsm
 					@
 
 		@book.memory[vi].on \found (key, xp) ~>
-			console.log "we found xp", xp, @keys.indexOf key
+			@debug "we found xp", xp, @keys.indexOf key
 			if not ~@keys.indexOf key
 				# for now, we assume that it is true for the filter function :)
 				# XXX: fixme!
@@ -471,7 +471,7 @@ class Quest extends Fsm
 					# perhaps an improvement here would we a streaming json parser?
 					data = ''; res.on \data (buf) -> data += buf
 					res.on \end ~>
-						console.log "this is the result of loading a quest: (#{@key}):", res.statusCode
+						@debug "this is the result of loading a quest: (#{@key}):", res.statusCode
 						@_loading = null
 						unless opts.cursor
 							@emit \empty
@@ -490,7 +490,7 @@ class Quest extends Fsm
 									@_id = json.id
 									@total = json.count
 								if Array.isArray result = json.result
-									console.log "results:", result
+									@debug "results:", result
 									if result.length is 0
 										@emit \nada
 									for key, i in result

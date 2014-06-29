@@ -38,9 +38,6 @@ phrases:
 			@get \name
 
 machina:
-	initialize: ->
-		console.log "Word::initialize"
-
 	states:
 		uninitialized:
 			onenter: ->

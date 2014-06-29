@@ -95,7 +95,7 @@ class StoryBook extends Fsm
 		@poetry[encantador][incantation] = fn
 
 	initialize: ->
-		console.log "storybook initialize!!!!!!"
+		@debug "storybook initialize!!!!!!"
 
 	_class: \StoryBook
 	renderers:
@@ -111,8 +111,7 @@ class StoryBook extends Fsm
 			Sandra: \latest
 	_render: -> @_el
 	render: (E) ->
-		console.log "whattt??? we shouldn't be here... remove me"
-		debugger
+		@debug.error "whattt??? we shouldn't be here... remove me"
 		if (s = @state) and (ss = @states[s])
 			if ss instanceof Fsm
 				debugger
@@ -175,7 +174,7 @@ class StoryBook extends Fsm
 				@debug "StoryBook waiting for something to do..."
 
 			'derivitave.node-webkit': !->
-				console.log "doing uninitialized:node-webkit"
+				@debug "doing uninitialized:node-webkit"
 				process.removeAllListeners \uncaughtException
 				process.on \uncaughtException (err) ~>
 					console.error "uncaught error:", err.stack
@@ -210,8 +209,7 @@ class StoryBook extends Fsm
 							return false
 					while el = el.parentNode
 					if path
-						debugger
-						console.log "wtf?!?! why?"
+						@debug.error "wtf?!?! why?"
 						@route path
 
 				$ window .bind \popstate, (evt) !~>
@@ -246,8 +244,6 @@ class StoryBook extends Fsm
 			@session.exec \persona.logout ->
 
 		open: (name, version, path, cb) ->
-			# console.log "if the poem is not downloaded, download it", &
-			# console.log "once the poem is downloaded and loaded, switch to it"
 			if typeof name isnt \string
 				throw new Error "we can't figure out the name of the poetry you're trying to load"
 			if typeof fqvn isnt \string
@@ -265,9 +261,8 @@ class StoryBook extends Fsm
 						@debug "loading poem '#noem' with sess_id: #sess_id", bp
 						@poem = poem = @poetry.Poem[name](sess_id)
 						poem.on \transition (evt) ~>
-							# console.log "transition evt", evt.toState
 							if evt.toState.indexOf('/') is 0
-								console.log "set the path!!", evt.toState
+								@debug "set the path!! -> %s", evt.toState
 								@push_path {poem: poem.fqvn, path: evt.toState}, poem.title
 						# @session.on \persona ~>
 						# 	# debugger
@@ -353,11 +348,9 @@ class StoryBook extends Fsm
 
 		switch proto
 		| \poem =>
-			console.log "poem router... eventually this will become a its own poem ... eg. poem://saviour/emanuel/muthta/fuckin/christ/is/awesome will oviously route 'emanuel/muthta/fuckin/christ/is/awesome' inside of the 'saviour' poem - obviously :) lol"
-			console.log " #{proto}:#{poem} @ path: #{path}"
+			@debug.error "poem router... eventually this will become a its own poem ... eg. poem://saviour/emanuel/muthta/fuckin/christ/is/awesome will oviously route 'emanuel/muthta/fuckin/christ/is/awesome' inside of the 'saviour' poem - obviously :) lol"
 			debugger
-			throw new Error "not yet implemented - sorry"
-
+			@debug " #{proto}:#{poem} @ path: #{path}"
 
 		# this is kinda old code... don't do this. it'll change
 		switch path
@@ -371,7 +364,7 @@ class StoryBook extends Fsm
 			_universe.on \ready ~>
 				$ lala .remove!
 
-		console.log "we're done...", is_back
+		@debug "we're done routing now ... is_back: %s", is_back
 
 ToolShed.extend StoryBook::, Fsm.Empathy
 export StoryBook

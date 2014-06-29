@@ -73,64 +73,19 @@ var cur_watcher, cur_file
 ###########################
 ###########################
 
-class UniVerse extends Fsm # implements Fabuloso
-	# if typeof _universe is \object
-	# 	return _universe
+class UniVerse extends Fsm
 	->
 		refs = {UniVerse: @}
 		_universe := this
 		@persona = false
-		# for now, the session is with the universe.
-		# I think this is the most logical
-
-		# refs.book = @book = new StoryBook
-		# @library = new Library
-		# @archive = new PublicDB name: \MultiVerse # more on the MultiVerse later :)
+		# this is the universe. more on the MultiVerse later :)
 		refs.archive = @archive = new PublicDB name: \UniVerse
-		# @archive.once_initialized ~>
-		# 	@transition \ready
-		refs.library = @library = new Library refs, name: \sencillo # host: ...
-		# refs.XpDB = @XpDB = new ExperienceDB
+		refs.library = @library = new Library refs, name: \sencillo
 
 		ToolShed.extend @, Fabuloso
 		super "UniVerse"
 
-	# default: host_poem
-	# poem: host_poem #\Affinaty
-
 	eventListeners:
-		'*': (evt, opts) ->
-			if evt.indexOf('dep:') is 0
-				# dep:Poem:Affinaty
-				[dep, name, version, ready] = evt.split ':'
-				console.log "we got a dep request!!", evt, opts, name, ready
-				# #refs.db.get collection, name
-				# unless ready
-				# 	bp = UniVerse.db.get name
-				# 	bp.once \state:ready, ~>
-				# 		opts = ToolShed.objectify bp._blueprint
-				# 		opts.path = url.path if url.path
-				# 		poem = new Poem name, refs, ToolShed.objectify bp._blueprint
-			else switch evt
-			| \auth =>
-				# session = &.0
-				# UniVerse.poem = session.poem
-				# UniVerse.mun = session.mun
-				# console.log "set poetry to poem #{UniVerse.poem} - mun #{UniVerse.mun}"
-				fallthrough
-			| \noauth \disconnected \connected =>
-				console.error "event.*", evt, &
-				re-emit = true
-			# if re-emit
-			# 	for name, p of UniVerse._
-			# 		console.log "re-emit.*" name, p.state
-			# 		# if p.state.0 isnt '/'
-			# 		# 	p.once_initialized evt, opts
-			# 		# else
-			# 		if p.active or true
-			# 			console.info "re-emitting in", name, evt, opts
-			# 			p.emit evt, opts
-
 		auth: (persona) ->
 			@debug "WE HAVE AUTH"
 			@persona = persona
@@ -139,106 +94,26 @@ class UniVerse extends Fsm # implements Fabuloso
 			@persona = false
 
 		transition: !(e) ->
-			console.log "#{@namespace} transition (%s -> %s)", e.priorState, e.toState
+			@debug "#{@namespace} transition (%s -> %s)", e.priorState, e.toState
 			execs = Object.keys @states[e.toState]
 			_.each @_derivitaves, (v, derivitave) ~>
 				d_name = "derivitave.#derivitave"
 				for exec in execs
 					if exec is d_name then @exec exec
 
-		# 'dep:Poem': (name, id) ~>
-		# 	if @derivitave \node-webkit
-		# 		console.log "init the node-webkit way (require)"
-		# 	else if @derivitave \browser
-		# 		console.log "init the poem the browser way"
-
-		# 	console.log "going to init poem:", name
-		# 	console.error "TODO: move tis poem over to its own file", name
-		# 	process = (data) ~>
-		# 		unless data
-		# 			attempt_disk!
-		# 		else
-		# 			#console.log "bp data:", typeof data, data
-		# 			#console.log "your bp(#name) is:",	ToolShed.objectify data
-		# 			poem = new Poem name, refs, ToolShed.objectify data
-		# 			poem.once "state:ready" ~>
-		# 				console.log "dep:Poem ready:: ", name
-		# 				UniVerse.emit "dep:Poem:#name:ready"
-
-		# 	attempt_disk = ~>
-		# 		path = Path.join \lib \Poems name+'.poem'
-		# 		ToolShed.readFile path, (err, data) ~>
-		# 			UniVerse.archive.set "Blueprint:#name", data
-		# 			#ToolShed.objectify data
-		# 			process data
-		# 	dfd = UniVerse.archive.get "Blueprint:#name"
-		# 	dfd.done process
-		# 	dfd.fail attempt_disk
-		# 	# poem = new Poem name, refs, {
-
-		# 	# }
-		# 	# debug " made poem... goeing to route now..."
-		# 	# poem.once \state:ready ~>
-		# 	# 	UniVerse.emit "dep:Poem:#{poem.name}:ready", poem
-		# 	# 	console.log "poem ready", poem
-
-		# 'dep:Blueprint': (name, opts) ~>
-		# 	console.error "TODO: 'dep:Blueprint'", &
-		# 	console.error "dep", Path.join \Blueprints, name+'.blueprint'
-		# 	process = (data) ~>
-		# 		unless data
-		# 			attempt_disk!
-		# 		else
-		# 			#console.log "bp data:", typeof data, data
-		# 			#console.log "your bp(#name) is:",	ToolShed.objectify data
-		# 			bp = new Blueprint refs, ToolShed.objectify data
-		# 			bp.once "state:ready" ~>
-		# 				console.log "dep:blueprint ready:: ", name
-		# 				UniVerse.emit "dep:Blueprint:#name:ready"
-
-		# 	attempt_disk = ~>
-		# 		path = Path.join \lib \Blueprints name+'.blueprint'
-		# 		ToolShed.readFile path, (err, data) ~>
-		# 			UniVerse.archive.set "Blueprint:#name", data
-		# 			#ToolShed.objectify data
-		# 			process data
-		# 	dfd = UniVerse.archive.get "Blueprint:#name"
-		# 	dfd.done process
-		# 	dfd.fail attempt_disk
-
 	states:
 		uninitialized:
 			onenter: ->
-				#TODO: show loading spinner updates
-				task = @task 'initializing...'
-				# task.push (done) ~>
-				# 	console.log "loading StoryBook"
-				# 	@book.once_initialized ~>
-				# 		console.log "StoryBook is ready!"
-				# 		done!
-				# task.push (done) ~>
-				# 	console.log "loading Library"
-				# 	# refs.db = @db = db = PublicDB refs, name: 'localhost'
-				# 	# refs.bp = {}
-				# 	@library.once_initialized ~>
-				# 		console.log "db is ready!"
-				# 		done!
+				# this is a pretty weak task. there is only one operation
+				task = @task 'initializing the UniVerse...'
 				task.push (done) ~>
-					console.log "loading PublicDB"
-					# refs.db = @db = db = PublicDB refs, name: 'localhost'
-					# refs.bp = {}
+					@debug "loading PublicDB"
 					@archive.once_initialized ~>
-						console.log "db is ready!"
+						@debug "db is ready!"
 						done!
 
-				# task.push (done) ~>
-				# 	console.log "going to check session"
-				# 	@session.once_initialized ->
-				# 		console.log "session is initialized"
-				# 		done!
-
 				task.end (err, res) ~>
-					console.log "all init tasks done!"
+					@debug "all init tasks done!"
 					@transitionSoon \ready
 
 
@@ -247,7 +122,6 @@ class UniVerse extends Fsm # implements Fabuloso
 			onenter: ->
 
 			auth: (err, session) ->
-				# console.log "ready.auth:", err, session
 				if err
 					@emitSoon \noauth, err
 				else
@@ -293,12 +167,3 @@ Object.defineProperty exports, "UniVerse", {
 		# debugger
 		return _universe
 }
-
-# _universe.on \new_task (task) ->
-# 	console.info "TODO: show loading screen"
-
-# _universe.on \disconnected (backoff) ->
-# 	console.info "TODO: show disconnected screen"
-
-# _universe.on \connected (what) ->
-# 	console.info "TODO: remove disconnected screen"
