@@ -65,7 +65,7 @@ class Implementation extends Fsm # Reality
 	# idea: \Implementation
 	# embodies:
 	# 	\Growler
-	(ambiente, path, output) ->
+	(ambiente, path, out_path) ->
 		if typeof ambiente is \string
 			path = ambiente
 
@@ -84,11 +84,11 @@ class Implementation extends Fsm # Reality
 		@src = ''
 
 		super "Implementation(#{path})", opts
-		if typeof output is \string
-			out_path = Path.resolve output
+		if typeof out_path is \string
+			opath = Path.resolve out_path
 			@on \compile:success ->
-				@debug "saving into: #{out_path}"
-				@exec \save out_path
+				@debug "saving into: #{opath}"
+				@exec \save opath
 
 
 	stringify: ->
@@ -97,6 +97,7 @@ class Implementation extends Fsm # Reality
 		else
 			throw new Error "not yet possible. TODO: add more langs"
 
+	# TODO: this needs to be specific to Ether / Blueprint
 	imbue: (essence) ->
 		idea = (impl = @_impl).idea
 		@debug.todo "save the imbued"
@@ -108,8 +109,8 @@ class Implementation extends Fsm # Reality
 
 		machina = @_impl.machina
 		if ambiente = @origin.0
-			console.log "yay, we have an origin", ambiente.namespace
-			ambiente.exec \connect self
+			console.log "TODO: spawn this in the ambiente"
+			# ambiente.exec \connect self
 			# ambiente.exec \create self
 
 		unless idea_constructor = @_constructor
@@ -132,31 +133,37 @@ class Implementation extends Fsm # Reality
 
 	eventListeners:
 		"set:src": -> @exec \compile
-		"compile:success": (res) ->
+		"compile:success": (src) ->
 			#TODO: update reality
-			_.each @_instances, (impl) ->
-				lhs = impl._impl
-				rhs = res.output
-				d = DeepDiff.observableDiff lhs, rhs, (d) ->
-					switch d.kind
-					| \E =>
-						if typeof d.lhs is \function and typeof d.rhs is \function
-							if d.lhs.toString! is d.rhs.toString!
-								return
-					console.log "change d:", d
-					DeepDiff.applyChange lhs, rhs, d
-					switch d.path.0
-					| \local =>
-						console.log "TODO: update any locals. changed:", d
-					| \machina =>
-						d.path.shift!
-						# console.log "applying:", d
-						DeepDiff.applyChange impl, rhs.machina, d
-			# _.each @_instances
-			# 	DeepDiff.applyChange impl, rhs.machina, d
-			if ambiente = @origin.0
-				console.log "exec save", (Path.join ambiente.library.path, @name)
-				@exec \save (Path.join ambiente.library.path, @name)
+			if @outfile and @src isnt src
+				@exec \save outfile
+			if src isnt @src
+				# _.each @_instances, (impl) ->
+				# for k in Object.keys @_instances
+				for inst in @_instances
+					lhs = impl._impl
+					rhs = res.output
+					d = DeepDiff.observableDiff lhs, rhs, (d) ~>
+						switch d.kind
+						| \E =>
+							if typeof d.lhs is \function and typeof d.rhs is \function
+								if d.lhs.toString! is d.rhs.toString!
+									return
+						console.log "change d:", d
+						DeepDiff.applyChange lhs, rhs, d
+						switch d.path.0
+						| \local =>
+							console.log "TODO: update any locals. changed:", d
+						| \machina =>
+							d.path.shift!
+							# console.log "applying:", d
+							DeepDiff.applyChange impl, rhs.machina, d
+							@emit \diff d
+				# _.each @_instances
+				# 	DeepDiff.applyChange impl, rhs.machina, d
+				if ambiente = @origin.0
+					console.log "exec save", (Path.join ambiente.library.path, @name)
+					@exec \save (Path.join ambiente.library.path, @name), src
 
 	states:
 		uninitialized:
@@ -170,30 +177,27 @@ class Implementation extends Fsm # Reality
 			onenter: ->
 				@emit \ready @_impl, @src
 
-			save: (path, opts) ->
+			save: (path) ->
 				if typeof opts isnt \object
 					opts = {}
 				unless path
 					return
 				console.log "saving: '#path' in #{process.cwd!}"
 				obj = @_impl
-				json_str = if opts.ugly => JSON.stringify obj else DaFunk.stringify obj, DaFunk.stringify.desired_order path
-				if json_str isnt @src
-					Fs.writeFile path, json_str, (err) ~>
-						if err
-							if err.code is \ENOENT
-								dirname = Path.dirname path
-								ToolShed.mkdir dirname, (err) ~>
-									if err
-										@transition \error, err
-									else @transition \retry
-							else
-								@transition \error, err
+				# this is wrong. it should probably stat the file and make the dir if ENOENT
+				# also return new if it's first save
+				Fs.writeFile path, @src, (err) ~>
+					if err
+						if err.code is \ENOENT
+							dirname = Path.dirname path
+							ToolShed.mkdir dirname, (err) ~>
+								if err
+									@transition \error, err
+								else @transition \retry
 						else
-							@src = json_str
-							@emit \saved obj, path, json_str
-						# @transition \ready
-				# else @transition \ready
+							@transition \error, err
+					else
+						@emit \saved obj, path, @src
 
 			retry:
 				onenter: ->
@@ -233,17 +237,18 @@ class Implementation extends Fsm # Reality
 					@exec \read path
 
 			Fs.readFile path, 'utf-8', (err, data) ~>
-				is_new = false
+				_new = false
 				if err
 					if err.code is \ENOENT
 						@emit \new
-						@is_new = true
+						_new = true
 					else
 						@transition \error e
 				else
 					if @src isnt data
 						@src = data
 						@emit \set:src, data
+				@_new = _new
 
 			file = Path.basename path
 			@parts = file.split '.'
@@ -261,6 +266,7 @@ class Implementation extends Fsm # Reality
 Implementation.langs =\
 	ls:
 		compile: (lang) ->
+			console.log "compile!!", lang
 			try
 				@debug "gonna compile with lang: '#{@lang}'"
 				@debug "gonna compile with proto: '#{@proto}'"
@@ -301,27 +307,53 @@ Implementation.langs =\
 
 				res.output = res.ast.compileRoot options
 				if res.result or true
+					# TODO: putting lodash in the globals just to compile is super duper ugly... make sure to use vm.createContext
 					global._ = require \lodash
-					# TODO: this is really ugly... make sure to use vm.createContext
 					CWD = process.cwd!
 					process.chdir Path.dirname res.path
 					res.output = LiveScript.run res.output, options, true
 					process.chdir CWD
-
-				@_impl = res.output
-				@emit \compile:success, res
 			catch e
 				@emit \compile:failure, e
+				msg = e.message+''
+				if ~msg.indexOf 'Parse error'
+					@debug "parse Error in '%s' :: %s", @path, msg
+					console.log "parse Error in '#{@path}' :: #msg"
+				else
+					@debug "parse Error in '%s' :: %s", @path, e.stack
+					console.log @path, ':', e.stack
+				return null
+
+			# @_impl = res.output
+			# @_impl = @stringify res.output
+
+			try
+				output = DaFunk.stringify res.output, @order || <[name description encantador incantation version embodies concepts machina states eventListeners layout]>
+				@emit @lang, @outfile, output
+				if output isnt @src
+					@src = output
+
+				@_impl = DaFunk.freedom JSON.parse output
+				@emit \compile:success, @_impl
+				return output
+			catch e
+				@emit \compile:failure, e
+				return null
+
+
+		stringify: (order) ->
+			try
+				output = DaFunk.stringify @_impl, order || <[name description encantador incantation version embodies concepts machina states eventListeners layout]>
+			catch e
 				if ~e.message.indexOf 'Parse error'
 					console.log @path, ':', e.message
 				else
 					console.log @path, ':', e.stack
+				@emit \stringify:failure, e
 
-		stringify: ->
-			try
-				output = DaFunk.stringify @_impl, <[name encantador incantation version embodies concepts eventListeners layout]>
-				@emit @lang, @outfile, output
-				if @outfile
+			return output
+
+		wtf: ->
 					Fs.writeFile @outfile, output, (err) ~>
 						if err
 							@emit \error, new Error "unable to write output to #{@outfile}"
@@ -330,16 +362,6 @@ Implementation.langs =\
 							@debug "wrote %s", @outfile
 							@emit \success message: "compiled: '#{@outfile}' successfully"
 							@transition \ready
-				# else
-				# 	@transition \ready
-			catch e
-				if ~e.message.indexOf 'Parse error'
-					console.log @path, ':', e.message
-				else
-					console.log @path, ':', e.stack
-				@emit \stringify:error, e
-
-			return output
 
 
 export Implementation

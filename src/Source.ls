@@ -425,10 +425,9 @@ class Ambiente extends Fsm # Verse
 						# 	else done new Error "could not load vagrant"
 						# console.log "task.end"
 						task.end (err, res) ~>
-							console.log "YAY!!"
 							throw err if err
 							@docker_host = 'tcp://127.0.0.1:1133'
-							@exec \load, @id if @id
+							if @id => @exec \load, @id
 
 					| otherwise =>
 						throw new Error "only mac is supported right now"

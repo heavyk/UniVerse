@@ -1,5 +1,8 @@
 {
 	"UniVerse": {
+		"name": "UniVerse",
+		"description": "communicate your ideas easily with poem and verse",
+		"version": "0.1.0",
 		"bundle": {
 			"dependencies": {
 				"prompt": "0.2.13"
@@ -9,10 +12,7 @@
 				"0.10.28"
 			]
 		},
-		"description": "communicate your ideas easily with poem and verse",
-		"motd": "we're all singing the same song anyway",
-		"name": "UniVerse",
-		"version": "0.1.0"
+		"motd": "we're all singing the same song anyway"
 	},
 	"bundles": {
 		"node": {
@@ -27,15 +27,18 @@
 		}
 	},
 	"effortless": {
+		"name": "effortless",
+		"description": "an effortless UniVerse",
+		"version": "0.1.0",
 		"bundle": {
 			"atom-shell": "0.13.0",
 			"node": "0.10.28"
-		},
-		"description": "an effortless UniVerse",
-		"name": "effortless",
-		"version": "0.1.0"
+		}
 	},
 	"sencillo": {
+		"name": "sencillo",
+		"description": "fácilmente!!",
+		"version": "0.1.0",
 		"Dockerfile": [
 			"FROM ubuntu:latest",
 			"MAINTAINER Kenneth Bentley \"mechanicofthesequence@gmail.com\"",
@@ -80,7 +83,6 @@
 			"thunkify": "^2.1.1",
 			"traverse": "^0.6.6"
 		},
-		"description": "fácilmente!!",
 		"local_fs": {
 			"lib": {
 				"node_modules": {
@@ -395,7 +397,6 @@
 				}
 			}
 		},
-		"name": "sencillo",
 		"prepare": 8,
 		"prepare.js": "function(prepare_done){\n\tvar task;\n\ttask = this.task('prepare a UniVerse');\n\ttask.push(function(done){\n\t\treturn this.exec('hardlink', 'patches', this.PATH + \"/\", done);\n\t});\n\treturn task.end(function(err, res){\n\t\tconsole.log(\"prepare task done....\", err, res);\n\t\treturn prepare_done();\n\t});\n}",
 		"repos": {
@@ -403,7 +404,6 @@
 				"revision": "master",
 				"upstream": "github://heavyk/Laboratory"
 			}
-		},
-		"version": "0.1.0"
+		}
 	}
 }

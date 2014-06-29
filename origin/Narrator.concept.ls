@@ -47,20 +47,16 @@ machina:
 	initialize: (opts) ->
 		# @db = new @ArangoDB \affinaty
 		@port = port = opts.port || 80
+		console.log "@HttpProxy", @
 		@pubdb_proxy = @HttpProxy.createProxyServer target: 'http://127.0.0.1:1111'
-		@pubdb_proxy = @HttpProxy.createProxyServer target: 'http://127.0.0.1:1111'
+		# @dnode_proxy = @HttpProxy.createProxyServer target: 'ws://127.0.0.1:1133' ws: true
 		@static_dirs = <[theme node_modules build doc lib mode less third_party]>
+		@_bp_cache = {}
 		@_gridfs = {}
 		@_proxies = {}
 		@_blueprints = {}
+		@_clients = []
 		app = @Express!
-		sock = @Shoe (stream) ~>
-			d = @Dnode {
-				require: (v, cb) ~>
-					cb v.toUpperCase!
-			}
-			d.pipe stream .pipe d
-		sock.install app, '/dnode'
 		for i in @static_dirs
 			dir = @Path.resolve @Path.join __dirname, i
 			app.use '/'+i, @Express.static dir
@@ -155,19 +151,37 @@ machina:
 					throw new Error "some sort of error here"
 
 				console.log "check implementation origin/#path.blueprint.ls", typeof @Implementation
-				impl = new @Implementation @origin.0, "origin/#path.blueprint.ls"
-				console.log "origin__ origin/#path.blueprint.ls"
-				impl.once \new ->
-					console.log "IS NEW!!", path
-					res.set 'Content-Type', 'application/json'
-					res.status 204
-					res.end '{}'
-				impl.once \compile:success ->
-					# Narrator = impl.imbue Reality
-					# res.end "got Implementation(origin/#path.blueprint.ls)"
-					res.set 'Content-Type', 'application/json'
-					res.end impl.stringify!
-				# @_blueprints =
+				if (impl = @_bp_cache[path])
+					if impl._new
+						res.status 204
+						res.end '{}'
+					else
+						res.set 'Content-Type', 'application/json'
+						res.end impl.stringify!
+				else
+					impl = @_bp_cache[path] = new @Implementation @origin.0, "origin/#path.blueprint.ls"
+					impl.once \new ->
+						res.set 'Content-Type', 'application/json'
+						res.status 204
+						res.end '{}'
+					impl.once \compile:success !~>
+						res.set 'Content-Type', 'application/json'
+						res.end impl.stringify!
+						impl.exec \watch
+					impl.on \diff (d) !~>
+						# this is res.result
+						console.log "YAY! WE have a new version. send it off over dnode now", @_clients.length
+						for c in @_clients
+							c.Blueprint \diff d
+						impl.stringify!
+			# else if url.substr(0, 7) is '/dnode/'
+			# 	console.log "we have a dnode...."
+			# 	suburl = url.substr 7
+			# 	# req.url = "/dev/PublicDB-0.0.1/" + suburl
+			# 	req.headers.host = 'localhost:9999'
+			# 	dnode_proxy.web req, res, (err) ->
+			# 		console.log "dnode error", err.stack
+			# 	# next!
 			else if url.substr(0, '/db/'.length) is '/db/'
 				suburl = url.substr 4
 				# this is for dev...
@@ -324,7 +338,6 @@ machina:
 		_.each proxies, (o, p) ~>
 			opts = {}
 			if target = o.target
-				console.log "Url", @Url
 				url = @Url.parse target
 				if url.protocol is \ws:
 					opts.ws = true
@@ -347,6 +360,8 @@ machina:
 				@_server = @Http.createServer @_app
 				@_server.on \connection (req, socket, head) !~>
 					@debug "incoming connection"
+				@_server.on \upgrade (req, socket, head) ~>
+					dnode_proxy.ws req, socket, head
 				@_server.on \error (err) !~>
 					@debug.error "http error -- %s %s", @listening, err.stack
 
@@ -367,6 +382,22 @@ machina:
 					# 		type: \ready
 					# 		port: port
 					# 	}
+				sock = @Shoe (stream) ~>
+					d = @Dnode {
+						test: (v, cb) ~>
+							cb v.toUpperCase!
+					}
+					d.pipe stream .pipe d
+					d.on \remote (remote, client) !~>
+						client.on \end !~>
+							@debug "ended remote connection"
+							if ~(c = @_clients.indexOf remote) then @_clients.splice c, 1
+							console.log "remote client disconnected", @_clients.length
+						@_clients.push remote
+						@debug "remote client connected"
+						console.log "remote client connected", @_clients.length
+				sock.install @_server, '/dnode'
+
 
 				@transition \stopped
 				@exec \listen
