@@ -55,8 +55,8 @@ class Ether extends Fsm
 
 	(impl, opts) ->
 		@_impl = impl
-		services = {}
-		client = {}
+		@services = {}
+		@client = {}
 		if @initialState
 			@_initialState = @initialState
 		@initialState = false
@@ -74,8 +74,7 @@ class Ether extends Fsm
 		# @namespace = <[Word Mun]> (will change the channel and everything)
 		# @namespace = <[Word Mun xyz123]> (will change the channel and everything)
 		# it'd be interesting if we listened on wildcards too, for controllers
-		super impl.inception, opts
-		# DaFunk.extend this, Ether.abstracts.Verse
+		super impl.name || impl.idea, opts
 		@_dep_done!
 
 	_dep_done: (dep) ->
@@ -91,18 +90,13 @@ class Ether extends Fsm
 	initialize: ->
 		self = this
 		if locals = @_impl.local
-			_.each locals, (uri, _where) ~>
+			_.each locals, (uri, where) ~>
 				@_deps.push uri
 				@origin.0.library.exec \get uri, (err, res) ~>
 					if err
 						@debug.error ''+err.stack
 					else
-						# if _where.0 isnt '{'
-						# 	m = res[_where]
-						# 	if _where is \Url
-						# 		console.log "Url::", res, _where, m
-						# 	if typeof m is \object or typeof m is \function => _where := "{#_where}"
-						ToolShed.set_obj_path _where, self, res
+						ToolShed.set_obj_path where, self, res
 						@_dep_done uri
 		# in the future this will be used to persist the state for each concept / whatever
 		# @_deps.push \config

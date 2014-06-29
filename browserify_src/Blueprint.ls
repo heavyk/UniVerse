@@ -906,11 +906,17 @@ class Blueprint extends Fsm
 				for d in deps
 					bp = @_deps[d]
 					if typeof bp is \object and (not book.poetry[@encantador] or not book.poetry[@encantador][@incantation])
-						bp.imbue book
+						task = @task "get deps" unless task
+						task.push (done) ->
+							bp.imbue book, done
 			if typeof cb is \function
 				# debugger
-				cb null, blueprint_inst, this
-				return void
+				if task
+					task.end (err) ->
+						cb err, blueprint_inst
+				else
+					cb null, blueprint_inst, this
+				return
 		else if typeof cb is \function
 			# debugger
 			@once \state:new !~>
@@ -991,7 +997,6 @@ class Blueprint extends Fsm
 							task.push "getting element: #{encantador}:#{incantation}@#{version}" (done) ->
 								UniVerse.library.exec \fetch {encantador, incantation, version}, @refs.book, (err, bp) ~>
 									@debug "got element: #{encantador}:#{incantation}@#{version}"
-									console.log "got element: #{encantador}:#{incantation}@#{version}", deps, task
 									@_deps[bp.fqvn] = bp
 									done!
 
@@ -1025,8 +1030,8 @@ class Blueprint extends Fsm
 							@transition \error
 
 		ready:
-			onenter: ->
-				console.log "we are ready @ #{@namespace}"
+			# onenter: ->
+			# 	console.log "we are ready @ #{@namespace}"
 			verify: (path, val) ->
 				#TODO: add path splitting by '.'
 

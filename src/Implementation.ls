@@ -114,6 +114,8 @@ class Implementation extends Fsm # Reality
 			# ambiente.exec \create self
 
 		unless idea_constructor = @_constructor
+			# TODO: this constructor should come from the Implementation.protos
+			#  - it should also be running inside of vm.runInContext - not eval
 			eval """
 			(function(){
 				var #{idea} = idea_constructor = (function(superclass){
@@ -133,23 +135,19 @@ class Implementation extends Fsm # Reality
 
 	eventListeners:
 		"set:src": -> @exec \compile
-		"compile:success": (src) ->
+		"compile:success": (output) ->
 			#TODO: update reality
-			if @outfile and @src isnt src
-				@exec \save outfile
-			if src isnt @src
-				# _.each @_instances, (impl) ->
-				# for k in Object.keys @_instances
-				for inst in @_instances
-					lhs = impl._impl
-					rhs = res.output
+			if output isnt @_output
+				rhs = JSON.parse output
+				if typeof @_output is \string
+					lhs = JSON.parse @_output
 					d = DeepDiff.observableDiff lhs, rhs, (d) ~>
 						switch d.kind
 						| \E =>
 							if typeof d.lhs is \function and typeof d.rhs is \function
 								if d.lhs.toString! is d.rhs.toString!
 									return
-						console.log "change d:", d
+
 						DeepDiff.applyChange lhs, rhs, d
 						switch d.path.0
 						| \local =>
@@ -157,13 +155,25 @@ class Implementation extends Fsm # Reality
 						| \machina =>
 							d.path.shift!
 							# console.log "applying:", d
-							DeepDiff.applyChange impl, rhs.machina, d
-							@emit \diff d
-				# _.each @_instances
-				# 	DeepDiff.applyChange impl, rhs.machina, d
+							# DeepDiff.applyChange @_impl, rhs.machina, d
+						d._key = @_impl._key
+						@emit \diff d
+						# maybe, I only need to apply this to the prototype
+						# _.each @_instances, (impl) ->
+						# for inst in @_instances
+						# 	DeepDiff.applyChange inst._impl, rhs.machina, d
+					# this isn't necessary. just apply them one by one on the server, the same as on the client
+					# @_impl = DaFunk.freedom rhs, {require}, {name: @path}
+				else
+					@_impl = DaFunk.freedom rhs, {require}, {name: @path}
+					# make a better way of assigning these
+					if not @_impl._key
+						@_impl._key = Math.random!toString 32 .substr 2
+				@_output = output
 				if ambiente = @origin.0
 					console.log "exec save", (Path.join ambiente.library.path, @name)
-					@exec \save (Path.join ambiente.library.path, @name), src
+					@exec \save (Path.join ambiente.library.path, @name), output
+
 
 	states:
 		uninitialized:
@@ -175,9 +185,9 @@ class Implementation extends Fsm # Reality
 
 		ready:
 			onenter: ->
-				@emit \ready @_impl, @src
+				@emit \ready @_impl, @_output
 
-			save: (path) ->
+			save: (path, output) ->
 				if typeof opts isnt \object
 					opts = {}
 				unless path
@@ -186,7 +196,7 @@ class Implementation extends Fsm # Reality
 				obj = @_impl
 				# this is wrong. it should probably stat the file and make the dir if ENOENT
 				# also return new if it's first save
-				Fs.writeFile path, @src, (err) ~>
+				Fs.writeFile path, @_output, (err) ~>
 					if err
 						if err.code is \ENOENT
 							dirname = Path.dirname path
@@ -197,7 +207,7 @@ class Implementation extends Fsm # Reality
 						else
 							@transition \error, err
 					else
-						@emit \saved obj, path, @src
+						@emit \saved obj, path, @_output
 
 			retry:
 				onenter: ->
@@ -251,11 +261,13 @@ class Implementation extends Fsm # Reality
 				@_new = _new
 
 			file = Path.basename path
-			@parts = file.split '.'
-			if @parts.length > 1
-				@lang = @parts[*-1]
-			if @parts.length > 2
-				@proto = @parts[*-2]
+			@parts = (parts = file.split '.').slice 0
+			if parts.length
+				@lang = parts.pop!
+			if parts.length
+				@proto = parts.pop!
+			# @name = parts.reverse!join '.'
+			# TODO: save into origin/[proto]/[name]
 			@name = @parts.slice 0, -1 .reverse!join '.'
 
 		compile: ->
@@ -263,10 +275,46 @@ class Implementation extends Fsm # Reality
 				lang.compile ...
 			else throw new Error "I don't know how to compile this"
 
-Implementation.langs =\
+# TODO: add concept, etc.
+Implementation.protos = {
+	default:
+		diff: (impl, diff) -> {impl.name, diff}
+		order:
+			* \name
+			* \description
+			* \version
+
+	json:
+		diff: (impl, diff) -> {impl.name, diff}
+		order:
+			* \name
+			* \description
+			* \version
+			* \homepage
+			* \author
+			* \contributors
+			* \maintainers
+
+	blueprint:
+		diff: (impl, diff) -> {impl._key, diff}
+		order:
+			* \name
+			* \description
+			* \encantador
+			* \incantation
+			* \version
+			* \embodies
+			* \concepts
+			* \machina
+			* \states
+			* \eventListeners
+			* \layout
+}
+
+Implementation.langs = {
 	ls:
-		compile: (lang) ->
-			console.log "compile!!", lang
+		compile: ->
+			console.log "compile!!", @lang
 			try
 				@debug "gonna compile with lang: '#{@lang}'"
 				@debug "gonna compile with proto: '#{@proto}'"
@@ -324,26 +372,31 @@ Implementation.langs =\
 					console.log @path, ':', e.stack
 				return null
 
-			# @_impl = res.output
-			# @_impl = @stringify res.output
+			if not proto_def = Implementation.protos[@proto]
+				proto_def = Implementation.protos.default
 
 			try
-				output = DaFunk.stringify res.output, @order || <[name description encantador incantation version embodies concepts machina states eventListeners layout]>
+				output = DaFunk.stringify res.output, proto_def.order
 				@emit @lang, @outfile, output
-				if output isnt @src
-					@src = output
+				# if output isnt @src
+				# 	@src = output
 
-				@_impl = DaFunk.freedom JSON.parse output
-				@emit \compile:success, @_impl
+				_impl = DaFunk.freedom (JSON.parse output), {require}, {name: @path}
+				@emit \compile:success, output, _impl
 				return output
 			catch e
+				console.log "NOOOOO", e.stack
 				@emit \compile:failure, e
 				return null
 
 
 		stringify: (order) ->
+			if Array.isArray order
+				proto_def = order: order
+			else if not (proto_def = Implementation.protos[@proto])
+				proto_def = Implementation.protos.default
 			try
-				output = DaFunk.stringify @_impl, order || <[name description encantador incantation version embodies concepts machina states eventListeners layout]>
+				output = DaFunk.stringify @_impl, proto_def.order
 			catch e
 				if ~e.message.indexOf 'Parse error'
 					console.log @path, ':', e.message
@@ -362,6 +415,7 @@ Implementation.langs =\
 							@debug "wrote %s", @outfile
 							@emit \success message: "compiled: '#{@outfile}' successfully"
 							@transition \ready
+}
 
 
 export Implementation

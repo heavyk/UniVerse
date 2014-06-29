@@ -25,7 +25,7 @@ machina:
 						mod = require "./src/#mod"
 						mod = @ToolShed.get_obj_path path, mod
 					else
-						mod = require "./src/#module"
+						mod = require "../src/#module"
 					# m = mod[module]
 					# if typeof m is \object or typeof m is \function
 					# 	mod = m

@@ -6,7 +6,7 @@ implementation: \Http # this needs to be a Process
 inception: \Narrator # this is the Verse
 type: \Cardinal
 version: \0.1.0
-description: "una red social basada en nuestra afinidad"
+description: "a good storyteller"
 idea: \Http #until I fix the code, this is necessary
 motd:
 	* "omg! we're so much alike!"
@@ -45,9 +45,8 @@ local:
 	# Laboratory:		\process://Laboratory@latest
 machina:
 	initialize: (opts) ->
-		# @db = new @ArangoDB \affinaty
+		# @db = new @PublicDB opts.namespace
 		@port = port = opts.port || 80
-		console.log "@HttpProxy", @
 		@pubdb_proxy = @HttpProxy.createProxyServer target: 'http://127.0.0.1:1111'
 		# @dnode_proxy = @HttpProxy.createProxyServer target: 'ws://127.0.0.1:1133' ws: true
 		@static_dirs = <[theme node_modules build doc lib mode less third_party]>
@@ -58,7 +57,7 @@ machina:
 		@_clients = []
 		app = @Express!
 		for i in @static_dirs
-			dir = @Path.resolve @Path.join __dirname, i
+			dir = @Path.resolve i
 			app.use '/'+i, @Express.static dir
 		# main callback
 		app.use (req, res, next) ~>
@@ -127,10 +126,8 @@ machina:
 					parts.dispose!
 					return converted
 				) (err, converted) ->
-					if err then console.log err.stack
-					#res.end converted.0
-					#sha1_b58 = converted
-					_.each converted, (jpg_buf, sha1_b58) ->
+					if err then next err
+					else _.each converted, (jpg_buf, sha1_b58) ->
 						console.log "putting", sha1_b58, jpg_buf.length
 						img_DB.put jpg_buf, sha1_b58, \w, {content_type: 'image/jpeg'}, (err, meta) ->
 							console.log "put", err, meta
@@ -169,10 +166,9 @@ machina:
 						res.end impl.stringify!
 						impl.exec \watch
 					impl.on \diff (d) !~>
-						# this is res.result
 						console.log "YAY! WE have a new version. send it off over dnode now", @_clients.length
 						for c in @_clients
-							c.Blueprint \diff d
+							c.Blueprint \diff path, d
 						impl.stringify!
 			# else if url.substr(0, 7) is '/dnode/'
 			# 	console.log "we have a dnode...."
@@ -235,8 +231,8 @@ machina:
 			# 	rereq.pipe req
 			# 	*/
 			else if url is '/' or true
-				console.log "TODO: get the title correctly - I think this is defined somewhere in the poem"
-				console.log "TODO: don't expose dirs like node_modules etc. as static."
+				@debug.todo "TODO: get the title correctly - I think this is defined somewhere in the poem"
+				@debug.todo "TODO: don't expose dirs like node_modules etc. as static."
 				res.end """
 				<!DOCTYPE html>
 				<html lang="en">
@@ -421,13 +417,10 @@ machina:
 
 		starting:
 			onenter: ->
-
 				# process.on \exit ->
 				# 	server.close ->
 				# 		debug "stopped accepting connections on #port"
 				# 	debug "closing http down"
-
-
 
 				# _.each @_app (app, port) ->
 				# 	@_server[port] = server
@@ -440,18 +433,18 @@ machina:
 				console.log "ready oh yeah!!"
 
 	cmds:
-		'proxy.add': (opts, cmd_done) ->
-		'proxy.remove': (opts, cmd_done) ->
+		# 'proxy.add': (opts, cmd_done) ->
+		# 'proxy.remove': (opts, cmd_done) ->
 		start: (opts, cmd_done) ->
-			console.log ""
+			console.log " - not yet implementated "
 
 		stop: (cmd_done) ->
+			@once \state:stopped, cmd_done if typeof cmd_done is \function
 			@transition \stopped
 
-		destroy: ->
-			console.log "calling destroy -"
+		destroy: (cmd_done) ->
 			@transition \stopped
 			@once \state:stopped ~>
 				@_server = null
+				@once \state:destroyed, cmd_done if typeof cmd_done is \function
 				@transitionSoon \destroyed
-				# cmd_done!
