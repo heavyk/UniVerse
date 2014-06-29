@@ -838,7 +838,7 @@ class Blueprint extends Fsm
 
 		super "Blueprint(#{@fqvn = @encantador+':'+@incantation+'@'+@version})"
 
-	imbue: (book) ->
+	imbue: (book, cb) !->
 		assert book instanceof StoryBook
 		if @state is \ready
 			var blueprint_inst
@@ -902,13 +902,33 @@ class Blueprint extends Fsm
 				"""
 			@debug "_deps", @_deps
 
-			_.each @_deps, (bp) ->
-				if typeof bp is \obje and (not book.poetry[@encantador] or not book.poetry[@encantador][@incantation])
-					bp.imbue book
-			return blueprint_inst
+			if (deps = Object.keys @_deps) and deps.length
+				for d in deps
+					bp = @_deps[d]
+					if typeof bp is \object and (not book.poetry[@encantador] or not book.poetry[@encantador][@incantation])
+						bp.imbue book
+			if typeof cb is \function
+				# debugger
+				cb null, blueprint_inst, this
+				return void
+		else if typeof cb is \function
+			# debugger
+			@once \state:new !~>
+				err = new Error "blueprint cannot be located so we're assuming it's new for now"
+				err.code = \ENOOB
+				cb err, null, this
+			@once \state:error !~>
+				err = new Error "blueprint has some sort of error"
+				err.code = \ENOENT
+				cb err, null, this
+			@once \state:ready !~>
+				imbued = @imbue book
+				# debugger
+				cb null, imbued, this
 		else
 			@debug.error "you can't imbue a blueprint that's not yet ready!: #{@fqvn}"
-			@debug "not ready!!" "encantador", @encantador, "incantation", @incantation
+			# @debug "not ready!!" "encantador", @encantador, "incantation", @incantation
+		return blueprint_inst
 
 	states:
 		uninitialized:
@@ -947,7 +967,8 @@ class Blueprint extends Fsm
 							UniVerse.library.exec \fetch {encantador, incantation, version}, @refs.book, (err, bp) ~>
 								@debug "fetched... %s:%s", encantador, incantation
 								@_deps.encantador = bp
-								bp.once_initialized ~> done!
+								# bp.once \state:ready ~> done!
+								done!
 
 					if embodies
 						_.each embodies, (incantation, ii) ->
@@ -961,7 +982,8 @@ class Blueprint extends Fsm
 									incantation := incantation.substr 0, idx
 								UniVerse.library.exec \fetch {encantador, incantation, version}, @refs.book, (err, bp) ~>
 									@_deps.embodies[ii] = bp
-									bp.once_initialized ~> done!
+									# bp.once_initialized ~> done!
+									done!
 
 					_.each _deps, (deps, encantador) ~>
 						_.each deps, (version, incantation) ~>
@@ -969,6 +991,7 @@ class Blueprint extends Fsm
 							task.push "getting element: #{encantador}:#{incantation}@#{version}" (done) ->
 								UniVerse.library.exec \fetch {encantador, incantation, version}, @refs.book, (err, bp) ~>
 									@debug "got element: #{encantador}:#{incantation}@#{version}"
+									console.log "got element: #{encantador}:#{incantation}@#{version}", deps, task
 									@_deps[bp.fqvn] = bp
 									done!
 
@@ -1002,12 +1025,18 @@ class Blueprint extends Fsm
 							@transition \error
 
 		ready:
+			onenter: ->
+				console.log "we are ready @ #{@namespace}"
 			verify: (path, val) ->
 				#TODO: add path splitting by '.'
 
 		error:
 			onenter: ->
 				@debug.error "you have tried to load a blueprint which wasn't able to be fetched", @incantation
+
+		new:
+			onenter: ->
+				@debug.todo "nice you don't know this bp yet, so now is the time to make it - make bp creation interface"
 
 
 export Meaning

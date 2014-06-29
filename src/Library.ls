@@ -108,11 +108,10 @@ class Library extends Fsm
 						if typeof cb is \function
 							cb {code: \TIMEOUT}, bp
 					, 4000
-					bp.once_initialized ->
-						# console.log "BLUEPRINT INITIALIZED"
+					bp.imbue book ->
 						clearTimeout timeout
-						bp.imbue book
-						bp.debug "BLUEPRINT IMBUED"
+						# bp.imbue book
+						bp.debug "BLUEPRINT IMBUED-"
 						if typeof cb is \function
 							cb null, bp
 

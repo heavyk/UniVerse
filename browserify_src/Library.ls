@@ -98,6 +98,8 @@ export class Library extends Fsm
 					version = \latest
 
 				long_incantation = encantador+':'+incantation+'@'+version
+				# if typeof cb is \function and ~long_incantation.indexOf 'Affinaty'
+				# 	debugger
 				if bp = @blueprints[long_incantation]
 					if typeof cb is \function
 						cb null, bp
@@ -110,13 +112,11 @@ export class Library extends Fsm
 						@debug "instantiating this in another poetry book"
 
 					@blueprints[long_incantation] = bp = new Blueprint refs, {encantador, incantation, version}
-					timeout = setTimeout ->
-						if typeof cb is \function
-							cb {code: \TIMEOUT}, bp
-					, 4000
-					bp.once_initialized ->
-						clearTimeout timeout
-						bp.imbue book
-						bp.debug "BLUEPRINT IMBUED"
-						if typeof cb is \function
-							cb null, bp
+					bp.imbue book, (err, _bp, bp) ~>
+						if err
+							@debug.todo "make the blueprint you referenced ... #{long_incantation}"
+							# debugger
+						else if typeof cb is \function
+							@debug "BLUEPRINT IMBUED"
+
+						cb err, bp

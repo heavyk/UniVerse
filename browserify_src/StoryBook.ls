@@ -250,7 +250,8 @@ class StoryBook extends Fsm
 				fqvn = name
 
 			UniVerse.library.exec \fetch {encantador: "Poem" incantation: name, version, book: @}, (err, bp) ~>
-				bp.once_initialized ~>
+				# debugger
+				bp.once \state:ready ~>
 					@debug "POEM INITIALIZED.... wait for a session"
 					@session.once_initialized !~>
 						@debug "SESSION INITIALIZED...."

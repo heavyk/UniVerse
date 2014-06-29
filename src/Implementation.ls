@@ -251,9 +251,7 @@ class Implementation extends Fsm # Reality
 				@lang = @parts[*-1]
 			if @parts.length > 2
 				@proto = @parts[*-2]
-			console.log "SET NAME:"
 			@name = @parts.slice 0, -1 .reverse!join '.'
-			console.log "SET NAME:", @name
 
 		compile: ->
 			if lang = Implementation.langs[@lang]
