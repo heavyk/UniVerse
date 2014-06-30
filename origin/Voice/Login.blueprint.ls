@@ -50,6 +50,7 @@ layout:
 		required: true
 		onempty: "type your password again."
 		onchange: (v) ->
+			console.log "change!!", v, @get \password
 			if v is @get \password
 				console.log "EQUAL!!!!"
 	# submit:
@@ -105,8 +106,8 @@ machina:
 		'/persona.login':
 			onenter: (opts) ->
 				console.log "persona.login.onenter", opts
-				console.log "ident:", user = @get \ident
-				console.log "password:", password = @get \password
+				console.log "ident:", user = (@get \ident) || \heavyk
+				console.log "password:", password = (@get \password) || \lala
 				@book.session.exec \persona.login {user, password}, (err, res) ~>
 					if err
 						@transition \login.error, "invalid login credentials..."
@@ -114,6 +115,7 @@ machina:
 						@transition \login.success, "horray for boobies"
 			render: (E) ->
 				E \div c: 'alert alert-info', "TRYING TO LOG YOU IN>>>"
+
 		'/login':
 			parts:
 				buttons: (E) -> E \div c: \row
@@ -137,7 +139,7 @@ machina:
 						# btn = E \input type: \submit value: "login" c: 'btn btn-default'
 						btn = E \a href: \persona.login c: 'btn btn-default', "login"
 					E \div c: 'col-sm-6',
-						E \a c: 'btn btn-link' href: '/register', "register"
+						E \a c: 'btn btn-link' href: '/register', "register :)"
 				]
 
 		'/forgot':
@@ -195,8 +197,23 @@ machina:
 
 			buttons: (E) ->
 				el = @_parts.password_again
-				el.style.border = 'solid 2px #c00'
+				# lolz this is so poorly done, it's to visually remind me to make it better... hahahaha
+				el.style.border = 'solid 0.5em #c00'
+				el.style.padding = '5px'
+				setTimeout ->
+					el.style.border = 'solid 0.25em #c00'
+				, 1000
+				setTimeout ->
+					el.style.border = 'solid 0.15em #c00'
+				, 2000
+				setTimeout ->
+					el.style.border = 'solid 0.1em #c00'
+				, 3000
+				setTimeout ->
+					el.style.border = ''
+					el.style.padding = ''
+				, 3000
 				el.style.padding = '5px'
 				E \div c: 'col-3 col-offset-9',
-					E \a c: 'btn btn-primary' href: '/register', "register"
+					E \a c: 'btn btn-primary' href: '/register', "register!!!"
 

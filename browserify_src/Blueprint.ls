@@ -46,6 +46,8 @@ Tone =
 			if not sv.type
 				debugger
 			type = sv.type.toString!toLowerCase! #this seems silly to be doing every time we render the form. instead, do it once when compiling the bp
+			changed_val = (e) ~>
+				voice.set part, if typeof sv.onchange is \function and typeof (val = sv.onchange.call(voice, e.target.value)) isnt \undefined => val else e.target.value
 			el = switch sv.render
 			| \glyphicon =>
 				icons = <[ glass music search envelope heart star star-empty user film th-large th th-list ok remove zoom-in zoom-out off signal cog trash home file time road download-alt download upload inbox play-circle repeat refresh list-alt lock flag headphones volume-off volume-down volume-up qrcode barcode tag tags poetry bookmark print camera font bold italic text-height text-width align-left align-center align-right align-justify list indent-left indent-right facetime-video picture pencil map-marker adjust tint edit share check move step-backward fast-backward backward play pause stop forward fast-forward step-forward eject chevron-left chevron-right plus-sign minus-sign remove-sign ok-sign question-sign info-sign screenshot remove-circle ok-circle ban-circle arrow-left arrow-right arrow-up arrow-down share-alt resize-full resize-small plus minus asterisk exclamation-sign gift leaf fire eye-open eye-close warning-sign plane calendar random comment magnet chevron-up chevron-down retweet shopping-cart folder-close folder-open resize-vertical resize-horizontal hdd bullhorn bell certificate thumbs-up thumbs-down hand-right hand-left hand-up hand-down circle-arrow-right circle-arrow-left circle-arrow-up circle-arrow-down globe wrench tasks filter briefcase fullscreen dashboard paperclip heart-empty link phone pushpin euro usd gbp sort sort-by-alphabet sort-by-alphabet-alt sort-by-order sort-by-order-alt sort-by-attributes sort-by-attributes-alt unchecked expand collapse collapse-top ]>
@@ -58,7 +60,8 @@ Tone =
 							value: (voice.get(part) or sv.default or '')
 							id: 'input_'+part
 							placeholder: (sv.onempty or '')
-							onchange: (e) ~> @set part, if typeof sv.onchange is \function and typeof (val = sv.onchange.call(@, @_xp, e)) isnt \undefined => val else e.target.value
+							onchange: changed_val
+							# onchange: (e) ~> @set part, if typeof sv.onchange is \function and typeof (val = sv.onchange.call(@, @_xp, e)) isnt \undefined => val else e.target.value
 					->
 						b = E \button c: 'btn btn-default',
 							E \span c: 'glyphicon glyphicon-cog'
@@ -87,7 +90,8 @@ Tone =
 							value: (voice.get(part) or sv.default or '')
 							id: 'input_'+part
 							placeholder: (sv.onempty or '')
-							onchange: (e) ~> @set part, if typeof sv.onchange is \function and typeof (val = sv.onchange.call(@, @_xp, e)) isnt \undefined => val else e.target.value
+							onchange: (e) ~> changed_val
+							# onchange: (e) ~> @set part, if typeof sv.onchange is \function and typeof (val = sv.onchange.call(@, @_xp, e)) isnt \undefined => val else e.target.value
 					~>
 						b = E \button c: 'btn btn-default pull-left',
 							E \span c: 'glyphicon glyphicon-cog'
@@ -105,8 +109,6 @@ Tone =
 					sv.onrender
 					if sv.oninfo => E \span c: \help-block, sv.oninfo
 			| otherwise =>
-				changed_val = (e) ~>
-					voice.set part, if typeof sv.onchange is \function and typeof (val = sv.onchange.call(voice, voice._xp, e)) isnt \undefined => val else e.target.value
 				switch type
 				| \string =>
 					E \div c: "form-group #{sv.render or type}",
@@ -117,7 +119,8 @@ Tone =
 								id: 'input_'+part
 								placeholder: (sv.onempty or '')
 								onchange: changed_val
-								onkeyup: _.debounce changed_val, 5000
+								onkeyup: changed_val
+								# onkeyup: _.debounce changed_val, 5000
 								(voice.get(part) or sv.default or '')
 								sv.onrender
 						else
@@ -130,7 +133,8 @@ Tone =
 								onchange: ->
 									changed_val ...
 									voice.save!
-								onkeyup: _.debounce changed_val, 2000
+								onkeyup: changed_val
+								# onkeyup: _.debounce changed_val, 2000
 								sv.onrender
 						if sv.oninfo => E \span c: \help-block, sv.oninfo
 				| \number =>
@@ -153,7 +157,8 @@ Tone =
 									step: sv.step
 									id: 'input_'+part
 									placeholder: (sv.onempty or '')
-									onchange: (e) ~> @set part, if typeof sv.onchange is \function and typeof (val = sv.onchange.call(@, @_xp, e)) isnt \undefined => val else e.target.value
+									onchange: changed_val
+									# onchange: (e) ~> @set part, if typeof sv.onchange is \function and typeof (val = sv.onchange.call(@, @_xp, e)) isnt \undefined => val else e.target.value
 									sv.onrender
 						if sv.oninfo => E \span c: \help-block, sv.oninfo
 				| \date =>
@@ -712,9 +717,6 @@ class Meaning extends Fsm
 				"TODO: new #{@namespace}... add the voice"
 
 
-			validate: ->
-
-
 		edit:
 			onenter: ->
 
@@ -726,10 +728,6 @@ class Meaning extends Fsm
 
 			render: (E) ->
 				E \h4 null "Meaning::ready", "(this is a bug because it stould initialize in the uninitialized state)"
-
-			validate: ->
-				@debug.error "TODO: @validate state??"
-				_.each @_bp.layout, (v, k) ->
 
 		invalidstate:
 			onenter: (e) ->
@@ -934,6 +932,7 @@ class Blueprint extends Fsm
 	eventListeners:
 		diff: (diff) ->
 			@debug "re-render after applying diff"
+			console.log "re-render"
 			for inst in @_instances
 				inst.emit \transition fromState: inst.priorState, toState: inst.state, args: []
 

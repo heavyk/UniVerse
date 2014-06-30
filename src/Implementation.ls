@@ -108,8 +108,8 @@ class Implementation extends Fsm # Reality
 				(ii = self._instances).splice (ii.indexOf inst), 1
 
 		machina = @_impl.machina
-		if ambiente = @origin.0
-			console.log "TODO: spawn this in the ambiente"
+		# if ambiente = @origin.0
+			# TODO: spawn this in the ambiente
 			# ambiente.exec \connect self
 			# ambiente.exec \create self
 
@@ -178,16 +178,13 @@ class Implementation extends Fsm # Reality
 						@_impl._key = Math.random!toString 32 .substr 2
 				@_output = output
 				if ambiente = @origin.0
-					console.log "exec save", (Path.join ambiente.library.path, @name)
 					@exec \save (Path.join ambiente.library.path, @name), output
 
 
 	states:
 		uninitialized:
 			onenter: ->
-				@once \executed:compile ->
-					console.log "executed compile!!!!!!"
-					@transition \ready
+				@once \executed:compile -> @transition \ready
 				@exec \read @path
 
 		ready:
@@ -199,7 +196,6 @@ class Implementation extends Fsm # Reality
 					opts = {}
 				unless path
 					return
-				console.log "saving: '#path' in #{process.cwd!}"
 				obj = @_impl
 				# this is wrong. it should probably stat the file and make the dir if ENOENT
 				# also return new if it's first save
@@ -303,9 +299,7 @@ Implementation.protos = {
 			* \maintainers
 
 	blueprint:
-		# diff: (impl, diff) -> {impl._key, diff}
 		diff: (diff) ->
-			console.log "blueprint diff!", @_impl.encantador + ':' + @_impl.incantation + '@' + @_impl.version
 			{_key: @_impl.encantador + ':' + @_impl.incantation + '@' + @_impl.version, diff}
 		order:
 			* \name
@@ -324,7 +318,6 @@ Implementation.protos = {
 Implementation.langs = {
 	ls:
 		compile: ->
-			console.log "compile!!", @lang
 			try
 				@debug "gonna compile with lang: '#{@lang}'"
 				@debug "gonna compile with proto: '#{@proto}'"
@@ -394,7 +387,7 @@ Implementation.langs = {
 				@emit \compile:success, output, _impl
 				return output
 			catch e
-				console.log "NOOOOO", e.stack
+				@debug.error "NOOOOO %s", e.stack
 				@emit \compile:failure, e
 				return null
 

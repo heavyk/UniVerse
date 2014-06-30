@@ -76,13 +76,12 @@ machina:
 				suburl = url.substr 7
 				# just doo'n what I do
 				if suburl is 'blueshift.js'
-					console.log "bundling..."
 					b = @Browserify {
 						require:
 							http: \http-browserify
 					}
 					b.on \error (err) ->
-						console.log "browserify error", err
+						console.log "browserify error - wait, this shouldn't happen!", err
 					b.add './blueshift.js'
 					bundle = b.bundle!
 					bundle.on \error (err) ->
@@ -92,11 +91,10 @@ machina:
 					bundle.pipe res
 				else next!
 			else if is_static
-				console.error "Http:static:404", url
+				@debug.warn "Http:static:404 - %s", url
 				res.status 404
 				res.end "404!"
 			else if url is \/file-upload
-				#parts = yield* Multipart req#, (err, parts) ->
 				(Co ->*
 					parts = yield from Multipart req #, concurrency: 1
 					converted = {}

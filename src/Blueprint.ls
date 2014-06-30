@@ -116,12 +116,6 @@ Symbolic = {}
 # right, so knowledge should define the space between things with some sort of experience
 # Knowlege is a Heart element
 
-
-# this is a really retarded hack to make sure that 'slice$' is defined in the window
-# pero me parece, que ahora no lo necesito...
-# though, this reminds me that I need to sort out the deps and optimize well :)
-# lala = (lala, ...lolz) ->
-
 # this class gives "meaning" to the 'Word' (data) by spawning it with the encantador
 # hehe, it's a Word Document ... get it?
 # Meaning is a Fixed sign (think astrology)
@@ -346,10 +340,8 @@ class Blueprint extends Implementation
 						@_deps.encantador = res
 						res.once_initialized ~> done!
 
-			# @debug.todo "add the ability for embodies to be abstract in some way"
 			if embodies
 				_.each embodies, (incantation, ii) ->
-					console.log "embodies", embodies, incantation
 					task.push "getting embodied: #{incantation}" (done) ->
 						unless incantation
 							debugger

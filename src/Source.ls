@@ -558,9 +558,8 @@ class Ambiente extends Fsm # Verse
 		loading:
 			onenter: ->
 				console.log "entered loading stage..."
-			'node:onenter': ->
-				console.log "we are node!!!!!!!!!!!!"
 
+			'node:onenter': ->
 				# the package should have bundle: {version, dependencies} etc.
 				# @transition \install_deps
 				# @transition \load_modules
@@ -616,8 +615,8 @@ class Ambiente extends Fsm # Verse
 					if typeof TARGET_UNIVERSE.prepare is \function
 						task.push 'calling prepare' (done) ->
 							TARGET_UNIVERSE.prepare.call @, done
-					else
-						throw new Error "you should have a prepare function..."
+					# else
+					# 	throw new Error "you should have a prepare function..."
 					# task.push (done) -> @exec \hardlink \src, (Path.join AMBIENTE_PATH, \src), done
 					# task.push (done) -> @exec \hardlink \origin, (Path.join AMBIENTE_PATH, \origin), done
 					# task.push (done) -> @exec \hardlink \node_modules/LiveScript, (Path.join AMBIENTE_PATH, \node_modules/), done
@@ -655,18 +654,15 @@ class Ambiente extends Fsm # Verse
 				# task.wait!
 
 				_.each TARGET_UNIVERSE.bundle, (v, b) ~>
-					console.log "UNIVERSE", UNIVERSE.bundle
 					version = get_version UNIVERSE.ambiente[b]
 					wanted = get_version TARGET_UNIVERSE.bundle[b]
 					@debug "checking bundle: (%s@%s) satisfies (%s@%s)", b, version, b, wanted
-					console.log "Semver.satisfies" version, wanted
 					# unless Semver.satisfies version, wanted
 					# 	@debug "bundling: %s@%s", b, v
 					# 	task.push (done) ->
 					# 		@exec "bundle:#b", v, done
 
 				# task.choke (done) -> @exec \install_modules, done
-				console.log "AMBIENTE_ID:::", @ENV.AMBIENTE_ID
 				unless @ENV.AMBIENTE_ID
 					env = {} <<< @env
 					task.choke (done) ->

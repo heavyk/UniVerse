@@ -36,22 +36,15 @@ export class Library extends Fsm
 				stream = Shoe '/dnode'
 				# stream_lab = Shoe '/dnode-lab'
 				# d = Dnode!# (remote) ->
+				# TODO: obviously, these should automatically execute commands on the correct object
 				d = Dnode {
 					Blueprint: (cmd, path, dd) ~>
 						switch cmd
 						| \diff =>
-							console.log "diff: #path", dd
 							if bp = @blueprints[dd._key]
 								diff = dd.diff
-								console.log "library blueprints", bp
-								console.log "lhs:", diff.lhs
-								# console.log "current:", diff.path, ToolShed.get_obj_path diff.path, bp._blueprint
 								ToolShed.set_obj_path diff.path, bp._blueprint, diff.rhs
-
-							bp.emit \diff, diff
-							# fqvn = @encantador+':'+@incantation+'@'+@version
-							# @blueprints[@fqvn] = @
-
+								bp.emit \diff, diff
 				}
 				d.on \remote (remote) !->
 					# debugger
@@ -77,20 +70,14 @@ export class Library extends Fsm
 				@__loading = req = Http.get {path: "/db/#{incantation}/#{key}"}, (res) !~>
 					@__loading = null
 					data = ''
-					res.on \error (err) ->
-						console.error "we've got an error!!", err
-
-					res.on \data (buf) ->
-						# console.log "got data", data
-						data += buf
-
+					res.on \error (err) -> @debug.error "we've got an error!!", err
+					res.on \data (buf) -> data += buf
 					res.on \end ~>
 						@_loading = null
 						if res.statusCode is 200
 							xp = ToolShed.objectify data, {}, {name: @id}
 							@debug "yay, we have the experience... store it"
 							@memory[incantation].set xp
-
 						else
 							@emit \error, {code: \ENOENT}
 							@transition res.statusCode

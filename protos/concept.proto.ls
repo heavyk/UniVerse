@@ -29,17 +29,12 @@ machina:
 	states:
 		uninitialized:
 			onenter: ->
-				console.log "origin", @origin.0.namespace
 				@_cache = {}
 				@__cache = {}
 				@transition \ready
 
 		ready:
-			onenter: ->
-				console.log "concept ready"
-
 			resolve: (name, cb) ->
-				console.log "concept RESOLVE", module
 				try
 					if constructor = @__cache[module]
 						return cb null, constructor
