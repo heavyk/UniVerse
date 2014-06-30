@@ -387,7 +387,7 @@ class Blueprint extends Implementation
 				# 			console.log "we got an update on #type:#name", @version
 				# 			#TODO: do the version as "latest" and make sure te updates are semver compliant
 				# 			console.log "TODO: replace the current blueprint (done inside blueprint)"
-				# 			console.log "TODO: blueprint has a node derivitave and a browser derivitave. one searches the localdb then does web updates, and the other gets from node"
+				# 			console.log "TODO: blueprint has a node derivative and a browser derivative. one searches the localdb then does web updates, and the other gets from node"
 				# 			console.log "TODO: add this functioality to blueprint"
 
 			# console.log "task:", task.fns, task.done, task

@@ -54,30 +54,6 @@ export init = (refs) ->
 
 	window.UniVerse = UniVerse
 
-	Dnode = require \dnode
-	Shoe = require \shoe
-
-	stream = Shoe '/dnode'
-	# stream_lab = Shoe '/dnode-lab'
-	# d = Dnode!# (remote) ->
-	d = Dnode {
-		Blueprint: (cmd, args) ->
-			console.log "got some updates", &
-	}
-	d.on \remote (remote) !->
-		# debugger
-		console.log "connected!"
-	d.pipe stream .pipe d
-	# dlab = Dnode! # (remote) ->
-	# 	# debugger
-	# 	# console.log "lala"
-	# dlab.on \remote, (remote) ->
-	# 	debugger
-	# 	remote.test 'lala' (s) ->
-	# 		console.log 'beep => ' + s
-	# 		dlab.end!
-	# dlab.pipe stream_lab .pipe dlab
-
 	# ONE-TIME INIT stuff
 	if ToolShed.nw_version
 		process.removeAllListeners \uncaughtException

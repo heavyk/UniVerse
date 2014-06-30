@@ -93,14 +93,6 @@ class UniVerse extends Fsm
 		noauth: ->
 			@persona = false
 
-		transition: !(e) ->
-			@debug "#{@namespace} transition (%s -> %s)", e.priorState, e.toState
-			execs = Object.keys @states[e.toState]
-			_.each @_derivitaves, (v, derivitave) ~>
-				d_name = "derivitave.#derivitave"
-				for exec in execs
-					if exec is d_name then @exec exec
-
 	states:
 		uninitialized:
 			onenter: ->
@@ -119,8 +111,6 @@ class UniVerse extends Fsm
 
 
 		ready:
-			onenter: ->
-
 			auth: (err, session) ->
 				if err
 					@emitSoon \noauth, err

@@ -885,22 +885,19 @@ class Blueprint extends Fsm
 							//#{if @type is \Fixed then 'DaFunk.extend(this, Symbolic);\n' else ''}
 							#{@encantador}.superclass.call(this, book, _bp, key, opts);
 						}
-						/*
-						if(embodies) {
-							for(var i in _deps.embodies) {
-								DaFunk.extend(prototype, book.poetry['#{@encantador}'].prototype);
-							}
-						}
-						*/
 						DaFunk.extend(prototype, _blueprint.machina);
 						return #{@encantador};
 					}(book.poetry['#{@encantador}']));
-					//book.poetry['#{@encantador}']['#{@incantation}'] = #{@incantation};
-					//book.poetry['#{@encantador}']['#{@incantation}@#{@version}'] = #{@incantation};
 					book.add_poetry('#{@encantador}', '#{@incantation}', '#{@version}', #{@incantation});
 				}())
 				"""
-			@debug "_deps", @_deps
+			_bp.on \diff (diff) ->
+				console.log "got diff!", diff.path
+				switch diff.path.0
+				| \machina =>
+					ToolShed.set_obj_path diff.path.slice(1), blueprint_inst.prototype, diff.rhs
+				| otherwise =>
+					console.log "unknown blueprint update", diff
 
 			if (deps = Object.keys @_deps) and deps.length
 				for d in deps
@@ -910,7 +907,6 @@ class Blueprint extends Fsm
 						task.push (done) ->
 							bp.imbue book, done
 			if typeof cb is \function
-				# debugger
 				if task
 					task.end (err) ->
 						cb err, blueprint_inst
@@ -918,7 +914,6 @@ class Blueprint extends Fsm
 					cb null, blueprint_inst, this
 				return
 		else if typeof cb is \function
-			# debugger
 			@once \state:new !~>
 				err = new Error "blueprint cannot be located so we're assuming it's new for now"
 				err.code = \ENOOB
@@ -929,11 +924,10 @@ class Blueprint extends Fsm
 				cb err, null, this
 			@once \state:ready !~>
 				imbued = @imbue book
-				# debugger
 				cb null, imbued, this
 		else
-			@debug.error "you can't imbue a blueprint that's not yet ready!: #{@fqvn}"
-			# @debug "not ready!!" "encantador", @encantador, "incantation", @incantation
+			@debug.error "you can't imbue a blueprint that's not yet ready! - use a callback to wait for it: #{@fqvn}"
+
 		return blueprint_inst
 
 	states:
@@ -1002,29 +996,28 @@ class Blueprint extends Fsm
 
 					task.end (err, res) ~>
 						@transitionSoon \ready
+				# TODO: move this to the library! the blueprint should not be doing http!!!!!!!
+				# TODO: in the arango libs, don't use xhr ... use Http like this
 				req = Http.get {
 					path: "/bp/#{@encantador}/#{@incantation}#{if @version and @version isnt \latest => '?version=' + @version else ''}"
 				}, (res) !~>
 					data = ''
-					res.on \error (err) ->
-						@debug.error "we've got an error!!", err
-
-					res.on \data (buf) ->
-						data += buf
-
+					res.on \error (err) -> @debug.error "we've got an error!!", err
+					res.on \data (buf) -> data += buf
 					res.on \end ~>
 						if res.statusCode is 200
 							@_blueprint = DaFunk.objectify data, {require: @refs.book.refs.require}, {name: @namespace}
 							if @version is \latest
 								@version = @_blueprint.version
-								@fqvn = @encantador+':'+@incantation+'@'+@version
-								@refs.library.blueprints[@fqvn] = @
+							@fqvn = @encantador+':'+@incantation+'@'+@version
+							@refs.library.blueprints[@fqvn] = @
 							if typeof @refs.book._[@encantador] isnt \object
 								@refs.book._[@encantador] = {}
 							if typeof @refs.book._[@encantador][@version] isnt \object
 								@refs.book._[@encantador][@version] = {}
 							process_bp!
 						else if res.statusCode is 204
+							# this should instead be known what to do by looking at `_key`
 							@transition \new
 						else
 							@transition \error

@@ -86,11 +86,9 @@ machina:
 					b.add './blueshift.js'
 					bundle = b.bundle!
 					bundle.on \error (err) ->
-						console.log "bundle error:", err
-						# res.status 500
-						# res.end JSON.stringify {err}
+						@debug.error "bundle error: %s", err.message
 						next err
-					# bundle.pipe process.stdout
+					res.set 'Content-Type', 'application/javascript'
 					bundle.pipe res
 				else next!
 			else if is_static

@@ -438,7 +438,8 @@ class Ambiente extends Fsm # Verse
 				err <~ ToolShed.mkdir SOURCE_DEPS_PATH
 				if err => throw err
 				# @refs.akasha = @akasha = new EtherDB @refs, name: \MultiVerse
-				@refs.akasha = @akasha = new EtherDB @refs, name: \UniVerse
+				# @refs.akasha = @akasha = new EtherDB @refs, name: \UniVerse
+				@debug.todo "get EtherDB working..."
 				@env = {}
 
 

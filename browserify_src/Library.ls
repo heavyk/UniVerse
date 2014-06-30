@@ -1,8 +1,9 @@
 
 Http = require \http
 assert = require \assert
+DeepDiff = require \deep-diff
 
-{ Fsm, ToolShed, _ } = require 'MachineShop'
+{ Fsm, ToolShed, DaFunk, _ } = require 'MachineShop'
 UniVerse = require './UniVerse' .UniVerse
 Blueprint = require './Blueprint' .Blueprint
 StoryBook = require './StoryBook' .StoryBook
@@ -19,12 +20,52 @@ export class Library extends Fsm
 		@__loading = {}
 		@memory = {}
 		@archive = refs.archive
+		DaFunk.extend this, Fsm.Empathy
 		super "Library"
 
 	states:
 		uninitialized:
 			onenter: ->
+				console.log "Library.onenter"
 				@transition \ready
+
+			'browser:onenter': ->
+				Dnode = require \dnode
+				Shoe = require \shoe
+
+				stream = Shoe '/dnode'
+				# stream_lab = Shoe '/dnode-lab'
+				# d = Dnode!# (remote) ->
+				d = Dnode {
+					Blueprint: (cmd, path, dd) ~>
+						switch cmd
+						| \diff =>
+							console.log "diff: #path", dd
+							if bp = @blueprints[dd._key]
+								diff = dd.diff
+								console.log "library blueprints", bp
+								console.log "lhs:", diff.lhs
+								# console.log "current:", diff.path, ToolShed.get_obj_path diff.path, bp._blueprint
+								ToolShed.set_obj_path diff.path, bp._blueprint, diff.rhs
+
+							bp.emit \diff, diff
+							# fqvn = @encantador+':'+@incantation+'@'+@version
+							# @blueprints[@fqvn] = @
+
+				}
+				d.on \remote (remote) !->
+					# debugger
+					console.log "connected!"
+				d.pipe stream .pipe d
+				# dlab = Dnode! # (remote) ->
+				# 	# debugger
+				# 	# console.log "lala"
+				# dlab.on \remote, (remote) ->
+				# 	debugger
+				# 	remote.test 'lala' (s) ->
+				# 		console.log 'beep => ' + s
+				# 		dlab.end!
+				# dlab.pipe stream_lab .pipe dlab
 
 		ready:
 			onenter: ->
@@ -58,6 +99,7 @@ export class Library extends Fsm
 					cb null, {yay: true}
 
 			fetch: (fqvn, book, cb) ->
+				# TODO: fetch doesn't need to know about the book!
 				if typeof book is \function
 					cb = book
 
@@ -111,8 +153,9 @@ export class Library extends Fsm
 						refs.book = book
 						@debug "instantiating this in another poetry book"
 
+					# TODO: do the Http here... not in the blueprint... the blueprint should only need to make itself happen
 					@blueprints[long_incantation] = bp = new Blueprint refs, {encantador, incantation, version}
-					bp.imbue book, (err, _bp, bp) ~>
+					bp.imbue book, (err, _constructor, bp) ~>
 						if err
 							@debug.todo "make the blueprint you referenced ... #{long_incantation}"
 							# debugger

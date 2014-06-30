@@ -115,7 +115,8 @@ class Implementation extends Fsm # Reality
 
 		unless idea_constructor = @_constructor
 			# TODO: this constructor should come from the Implementation.protos
-			#  - it should also be running inside of vm.runInContext - not eval
+			# TODO: this should be run inside of vm.runInContext - not eval
+			# OPTIMIZE: we really need to look into see how v8 is optimizing this (if at all) and make it faster. I'm 100% sure this isn't the best way, lol
 			eval """
 			(function(){
 				var #{idea} = idea_constructor = (function(superclass){
@@ -148,16 +149,22 @@ class Implementation extends Fsm # Reality
 								if d.lhs.toString! is d.rhs.toString!
 									return
 
-						DeepDiff.applyChange lhs, rhs, d
+						# DeepDiff.applyChange lhs, rhs, d
+						DeepDiff.applyChange lhs, @_impl, d
 						switch d.path.0
 						| \local =>
 							console.log "TODO: update any locals. changed:", d
 						| \machina =>
-							d.path.shift!
+							# d.path.shift!
 							# console.log "applying:", d
 							# DeepDiff.applyChange @_impl, rhs.machina, d
-						d._key = @_impl._key
-						@emit \diff d
+						# d._key = @_impl._key
+						if not proto_def = Implementation.protos[@proto]
+							proto_def = Implementation.protos.default
+
+						diff = proto_def.diff.call @, d
+						DeepDiff.applyChange @_impl, rhs, d
+						@emit \diff diff
 						# maybe, I only need to apply this to the prototype
 						# _.each @_instances, (impl) ->
 						# for inst in @_instances
@@ -222,8 +229,6 @@ class Implementation extends Fsm # Reality
 
 			watch: (ms = 100) ->
 				@debug "watch: #ms"
-				console.log "watcher", &
-				# throw new Error "watcher"
 				# this really should be a cmd
 				# start the watcher
 				@_watch = ms
@@ -242,6 +247,8 @@ class Implementation extends Fsm # Reality
 				@file = Path.basename path
 				@watcher = null if @watcher
 			if ms = @_watch and not @watcher
+				# on linux, I shouldn't be polling on an interval... it should just inotify. look into it
+				# this is probably a huge performance decrease for mac/windows
 				@watcher = Fs.watchFile path, {interval: ms} (st1, st2) ~>
 					@debug "disturbance @ '#path'"
 					@exec \read path
@@ -278,14 +285,14 @@ class Implementation extends Fsm # Reality
 # TODO: add concept, etc.
 Implementation.protos = {
 	default:
-		diff: (impl, diff) -> {impl.name, diff}
+		diff: (diff) -> {_key: @_impl.name, diff}
 		order:
 			* \name
 			* \description
 			* \version
 
 	json:
-		diff: (impl, diff) -> {impl.name, diff}
+		diff: (diff) -> {_key: @_impl.name, diff}
 		order:
 			* \name
 			* \description
@@ -296,7 +303,10 @@ Implementation.protos = {
 			* \maintainers
 
 	blueprint:
-		diff: (impl, diff) -> {impl._key, diff}
+		# diff: (impl, diff) -> {impl._key, diff}
+		diff: (diff) ->
+			console.log "blueprint diff!", @_impl.encantador + ':' + @_impl.incantation + '@' + @_impl.version
+			{_key: @_impl.encantador + ':' + @_impl.incantation + '@' + @_impl.version, diff}
 		order:
 			* \name
 			* \description
@@ -374,7 +384,6 @@ Implementation.langs = {
 
 			if not proto_def = Implementation.protos[@proto]
 				proto_def = Implementation.protos.default
-
 			try
 				output = DaFunk.stringify res.output, proto_def.order
 				@emit @lang, @outfile, output
@@ -405,16 +414,6 @@ Implementation.langs = {
 				@emit \stringify:failure, e
 
 			return output
-
-		wtf: ->
-					Fs.writeFile @outfile, output, (err) ~>
-						if err
-							@emit \error, new Error "unable to write output to #{@outfile}"
-							@transition \error
-						else
-							@debug "wrote %s", @outfile
-							@emit \success message: "compiled: '#{@outfile}' successfully"
-							@transition \ready
 }
 
 

@@ -83,6 +83,8 @@ class StoryBook extends Fsm
 		else if typeof @_el isnt \object
 			throw new Error "I dunno what to do! "+typeof @_el
 
+		# we're doing this on the prototype, below...
+		# DaFunk.extend this, Fsm.Empathy
 		super "StoryBook"
 		if typeof id is \string
 			@debug.todo "load up a storybook from the database of a defined id (figurehead)"
@@ -126,12 +128,6 @@ class StoryBook extends Fsm
 			cE = self.refs.window.cE
 			aC = self.refs.window.aC
 			path = self.state
-			execs = Object.keys @states[e.toState]
-			_.each @_derivitaves, (v, derivitave) ~>
-				d_name = "derivitave.#derivitave"
-				for exec in execs
-					if exec is d_name then @exec exec
-
 			_.each self._renderers, (renderer, i) ~>
 				if typeof self.state isnt \undefined
 					if typeof (r = self.states[path][renderer]) isnt \undefined
@@ -173,7 +169,7 @@ class StoryBook extends Fsm
 			onenter: ->
 				@debug "StoryBook waiting for something to do..."
 
-			'derivitave.node-webkit': !->
+			'node-webkit:onenter': !->
 				@debug "doing uninitialized:node-webkit"
 				process.removeAllListeners \uncaughtException
 				process.on \uncaughtException (err) ~>
@@ -181,7 +177,7 @@ class StoryBook extends Fsm
 					throw err
 				#TODO: add watcher
 
-			'derivitave.browser': !->
+			'browser:onenter': !->
 				$ window .bind \click, (e) ~>
 					target = e.target
 					if target.form # or ((c = target.className) and ~c.indexOf('disabled') and ~(c.split ' ').indexOf 'disabled')
