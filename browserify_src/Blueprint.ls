@@ -289,7 +289,7 @@ class Meaning extends Fsm
 			if @_xp
 				@_xp_tpl = {} <<< @_xp
 				@_xp._k = client_key
-			if typeof self._el isnt \object
+			if self._el is void
 				self._el = \form
 		| \Mutable =>
 			if key
@@ -316,6 +316,7 @@ class Meaning extends Fsm
 			@parts = {}
 
 		super "#{_bp.encantador}:#{_bp.incantation}(#{if key => key else if _bp.type is \Fixed then \new else _bp.type })"
+		@_bp.emit \register this
 
 		if not @id
 			debugger
@@ -824,6 +825,7 @@ class Blueprint extends Fsm
 			throw new Error "you have to reference a PoetryBook for a blueprint because we save the imbuement into the poetry book, obviously"
 
 		@_blueprint = opts
+		@_instances = []
 
 		unless @incantation
 			@debug.error "you need a incantation for your blueprint!"
@@ -871,7 +873,6 @@ class Blueprint extends Fsm
 					book.poetry['#{@encantador}'] = #{@encantador};
 				}())
 				"""
-
 
 			if @encantador isnt @incantation
 				eval """
@@ -929,6 +930,15 @@ class Blueprint extends Fsm
 			@debug.error "you can't imbue a blueprint that's not yet ready! - use a callback to wait for it: #{@fqvn}"
 
 		return blueprint_inst
+
+	eventListeners:
+		diff: (diff) ->
+			@debug "re-render after applying diff"
+			for inst in @_instances
+				inst.emit \transition fromState: inst.priorState, toState: inst.state, args: []
+
+		register: (inst) ->
+			@_instances.push inst
 
 	states:
 		uninitialized:
