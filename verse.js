@@ -76,9 +76,32 @@ mV.once('saved', function(){
   var amb;
   amb = new Ambiente(process.env.AMBIENTE_ID || 'sencillo');
   return amb.on('state:ready', function(){
-    var impl, db;
+    var VERSE_ID, impl, db;
     console.log("ambiente is ready!!");
     console.log("TODO: technically, I shouldn't need to wait for its ready state. the Implementation should do that");
+    if (VERSE_ID = process.env.VERSE_ID) {
+      impl = new Implementation(amb, "origin/" + VERSE_ID + ".ls");
+      impl.on('compile:success', function(){
+        var ArangoDB, db;
+        _.each(impl._instances, function(inst){
+          return inst.exec('destroy');
+        });
+        ArangoDB = impl.imbue(Ether);
+        db = new ArangoDB({
+          port: 1111
+        });
+        return db.on('state:ready', function(){
+          return console.log('ArangoDB ready');
+        });
+      });
+    } else {
+      amb.exec('add:verse', 'PublicDB.concept', function(verse){
+        return console.log("yay we got a verse:", verse.namespace);
+      });
+      amb.exec('add:verse', 'Narrator.concept', function(verse){
+        return console.log("yay we got a verse:", verse.namespace);
+      });
+    }
     console.log("load narrator");
     add_growl(impl = new Implementation(amb, "origin/Narrator.concept.ls"));
     return impl.on('compile:success', function(){

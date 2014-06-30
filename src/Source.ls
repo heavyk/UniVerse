@@ -392,14 +392,12 @@ class Ambiente extends Fsm # Verse
 							Fs.writeFile (Path.join SOURCE_PATH, \user-data), (THE_SOURCE.'user-data' config), done
 
 						# RETURNING WITH INTERNET
-						# task.wait!
-						# task.push (done) ~>
-						# 	console.log cwd: SOURCE_PATH
-						# 	(err, stdout) <~ ToolShed.exec "#{@bin.vagrant} up --provision", cwd: SOURCE_PATH
-						# 	if err => done err
-						# 	else
-						# 		# (err, stdout) <~ ToolShed.exec "#{@bin.vagrant} provision", cwd: SOURCE_PATH
-						# 		done err
+						task.wait!
+						task.push (done) ~>
+							(err, stdout) <~ ToolShed.exec "#{@bin.vagrant} up --provision", cwd: SOURCE_PATH
+							if err => done err
+							else
+								done err
 						# END RETURNING WITH INTERNET
 
 						# task.choke (done) ~>
@@ -674,20 +672,18 @@ class Ambiente extends Fsm # Verse
 						# Dockerfile.push "RUN node --harmony verse.js"
 						ToolShed.writeFile (Path.join AMBIENTE_PATH, 'Dockerfile'), (Dockerfile.join '\n'), done
 					# RETURNING WITH INTERNET
-					# task.choke (done) ->
-					# 	# @exec \install_modules, done
-					# 	console.log "docker_host", @docker_host, @env
-					# 	console.log "#{@bin.docker} build -t #{@id} ."
-					# 	(err, stdout) <~ ToolShed.exec "#{@bin.docker} build --rm=false -t #{@id} .", @env
-					# 	if not err
-					# 		# (err) <~ ToolShed.exec "#{@bin.docker} build -t #{@id} .", @env
-					# 		if ~(i = stdout.indexOf "Successfully built")
-					# 			# eg. ebb4d24bffd4
-					# 			console.log " ::: ", stdout.substr i+"Successfully built ".length, 12
-					# 			id = stdout.substr i+"Successfully built ".length, 12
-					# 			(err) <~ ToolShed.exec "#{@bin.docker} tag #id #{@id}:latest", @env
-					# 			done err
-					# 	else done err
+					task.choke (done) ->
+						console.log "#{@bin.docker} build -t #{@id} ."
+						(err, stdout) <~ ToolShed.exec "#{@bin.docker} build --rm=false -t #{@id} .", @env
+						if not err
+							# (err) <~ ToolShed.exec "#{@bin.docker} build -t #{@id} .", @env
+							if ~(i = stdout.indexOf "Successfully built")
+								# eg. ebb4d24bffd4
+								console.log " ::: ", stdout.substr i+"Successfully built ".length, 12
+								id = stdout.substr i+"Successfully built ".length, 12
+								(err) <~ ToolShed.exec "#{@bin.docker} tag #id #{@id}:latest", @env
+								done err
+						else done err
 					# END RETURNING WITH INTERNET
 
 				task.end (err, res) ~>
@@ -836,7 +832,7 @@ class Ambiente extends Fsm # Verse
 			console.log "ADD VERSE: - #name"
 			# TODO: properly look this up
 			impl = new Implementation @, "origin/#{name}.ls"
-			impl.on \compile:success ~>
+			impl.once \compile:success ~>
 				console.log "compile:success", name
 				task = @task 'run verse'
 				# _.each impl._instances, (inst) ->
@@ -846,15 +842,21 @@ class Ambiente extends Fsm # Verse
 					Dockerfile = [Dockerfile]
 				else if not Array.isArray Dockerfile
 					Dockerfile = []
-				fullname = impl._impl.name + '-' + (version = impl._impl.version)
+				fullname = impl.name + '-' + (version = impl._impl.version)
+				# console.log "name:", name, "impl.name:", impl.name, "fullname:", fullname
 				env = {} <<< @env
-				task.choke (done) -> ToolShed.mkdir (env.env.PWD = env.cwd = Path.join AMBIENTE_PATH, '.verse', fullname), done
+				impl.PATH = Path.join AMBIENTE_PATH, '.verse', fullname
+				task.choke (done) -> ToolShed.mkdir (env.env.PWD = env.cwd = impl.PATH), done
+				console.log "impl.PATH", impl.PATH
+				if typeof impl._impl.prepare is \function
+					task.choke 'calling prepare' (done) ->
+						impl._impl.prepare.call impl, done
 				task.choke (done) ->
 					Dockerfile.unshift "FROM #{@id}:latest"
-					# add maintainer
+					# TODO: add maintainer
 					Dockerfile.push "ENV VERSE_ID #{name}"
 					Dockerfile.push "ENV VERSE_VERSION #{version}"
-					console.log "docker:\n", Dockerfile.join '\n'
+					console.log " -> Dockerfile:\n#{Dockerfile.join '\n'}"
 					ToolShed.writeFile (Path.join AMBIENTE_PATH, '.verse', fullname, \Dockerfile), (Dockerfile.join '\n'), done
 				task.choke (done) ~>
 					# uid = @id + '-' + Math.random!toString 32 .substr 2
@@ -862,6 +864,7 @@ class Ambiente extends Fsm # Verse
 					console.log "container: #uid", env
 					# when running the container, use this: -v ./origin:/opt/Blueshift/origin
 					# or, transfer it over ssh
+					console.log "exec: #{@bin.docker} build --rm=false -t #uid .", env
 					(err) <~ ToolShed.exec "#{@bin.docker} build --rm=false -t #uid .", env
 
 					# (err) <~ ToolShed.exec "#{@bin.docker} commit #uid .", env

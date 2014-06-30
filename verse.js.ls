@@ -91,28 +91,30 @@ mV.once \saved ->
 	amb.on \state:ready ->
 		console.log "ambiente is ready!!"
 		console.log "TODO: technically, I shouldn't need to wait for its ready state. the Implementation should do that"
-		# if VERSE_ID = process.env.VERSE_ID
-		# 	# console.log "spawning Implementation"
-		# 	# XXX: I should be spawning UniVerse.concept here..
-		# 	impl = new Implementation amb, "origin/#{VERSE_ID}.ls"
-		# 	impl.on \compile:success ->
-		# 		_.each impl._instances, (inst) ->
-		# 			inst.exec \destroy
+		if VERSE_ID = process.env.VERSE_ID
+			# console.log "spawning Implementation"
+			# XXX: I should be spawning UniVerse.concept here..
+			impl = new Implementation amb, "origin/#{VERSE_ID}.ls"
+			impl.on \compile:success ->
+				_.each impl._instances, (inst) ->
+					inst.exec \destroy
 
-		# 		ArangoDB = impl.imbue Ether
-		# 		db = new ArangoDB {
-		# 			port: 1111
-		# 		}
-		# 		db.on \state:ready ->
-		# 			console.log 'ArangoDB ready'
-		# else
-		# 	amb.exec \add:verse \PublicDB.concept (verse) ->
-		# 		console.log "yay we got a verse:", verse.namespace
-		# amb.exec \add:verse \Narrator.concept (verse) ->
-		# 	console.log "yay we got a verse:", verse.namespace
+				ArangoDB = impl.imbue Ether
+				db = new ArangoDB {
+					port: 1111
+				}
+				db.on \state:ready ->
+					console.log 'ArangoDB ready'
+		else
+			amb.exec \add:verse \PublicDB.concept (verse) ->
+				console.log "yay we got a verse:", verse.namespace
+			amb.exec \add:verse \Narrator.concept (verse) ->
+				console.log "yay we got a verse:", verse.namespace
 		# END RETURNING WITH INTERNET
 		# add_growl \
 		# 	impl = new Implementation amb, "origin/PublicDB.concept.ls"
+
+		# FOR LOCAL BELOW
 		console.log "load narrator"
 		add_growl \
 			impl = new Implementation amb, "origin/Narrator.concept.ls"
