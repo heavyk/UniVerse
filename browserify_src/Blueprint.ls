@@ -11,6 +11,7 @@ Tone =
 	'also|initialize': ->
 		# get the bp from the universe just like 'Meaning' does
 		# then, overlay the voice on top of the meaning (or the verse)
+		@_required_parts = []
 		for k, p of @_bp._blueprint.layout
 			if not p.hidden and typeof @parts[k] is \undefined
 				@parts[k] = ((type) ->
@@ -28,9 +29,15 @@ Tone =
 			@exec \verify
 
 	eventListeners:
-		verified: ->
-			debugger
-			@debug.todo "TODO: form verification"
+		valid: (path, v) !->
+			if p = @_parts[path]
+				$ p .removeClass \has-error .addClass \has-success
+			@_form_fields[path] = true
+
+		invalid: (path, v) !->
+			if p = @_parts[path]
+				$ p .removeClass \has-success .addClass \has-error
+			@_form_fields[path] = false
 
 	cmds:
 		verify: ->
@@ -38,20 +45,22 @@ Tone =
 				return true
 			@debug.error "verify this for reals..."
 			@_is_verified = true
+
 		field_entry: (part, sv) !->
 			voice = @
 			if not _part = @_parts[part]
 				throw new Error "trying to render a part('#part') but it isn't defined..."
 			E = cE
 			if not sv.type
-				debugger
-			type = sv.type.toString!toLowerCase! #this seems silly to be doing every time we render the form. instead, do it once when compiling the bp
+				throw new Error "this should never happen... on bp save we should validate that it has a valid type"
 			changed_val = (e) ~>
-				voice.set part, if typeof sv.onchange is \function and typeof (val = sv.onchange.call(voice, e.target.value)) isnt \undefined => val else e.target.value
+				v = if typeof sv.onchange is \function and typeof (val = sv.onchange.call(voice, voice._xp, e)) isnt \undefined => val else e.target.value
+				voice.set part, v if v
+			type = sv.type.toString!toLowerCase! #this seems silly to be doing every time we render the form. instead, do it once when compiling the bp
 			el = switch sv.render
 			| \glyphicon =>
 				icons = <[ glass music search envelope heart star star-empty user film th-large th th-list ok remove zoom-in zoom-out off signal cog trash home file time road download-alt download upload inbox play-circle repeat refresh list-alt lock flag headphones volume-off volume-down volume-up qrcode barcode tag tags poetry bookmark print camera font bold italic text-height text-width align-left align-center align-right align-justify list indent-left indent-right facetime-video picture pencil map-marker adjust tint edit share check move step-backward fast-backward backward play pause stop forward fast-forward step-forward eject chevron-left chevron-right plus-sign minus-sign remove-sign ok-sign question-sign info-sign screenshot remove-circle ok-circle ban-circle arrow-left arrow-right arrow-up arrow-down share-alt resize-full resize-small plus minus asterisk exclamation-sign gift leaf fire eye-open eye-close warning-sign plane calendar random comment magnet chevron-up chevron-down retweet shopping-cart folder-close folder-open resize-vertical resize-horizontal hdd bullhorn bell certificate thumbs-up thumbs-down hand-right hand-left hand-up hand-down circle-arrow-right circle-arrow-left circle-arrow-up circle-arrow-down globe wrench tasks filter briefcase fullscreen dashboard paperclip heart-empty link phone pushpin euro usd gbp sort sort-by-alphabet sort-by-alphabet-alt sort-by-order sort-by-order-alt sort-by-attributes sort-by-attributes-alt unchecked expand collapse collapse-top ]>
-				E \div c: "form-group #{sv.render or type}",
+				[
 					E \label, c: 'control-label col-lg-3 pull-left' for: 'input_'+part, (sv.label or part)
 					E \div c: 'col-lg-3 col-3',
 						iin = E \input,
@@ -80,8 +89,9 @@ Tone =
 						}
 					sv.onrender
 					if sv.oninfo => E \span c: \help-block, sv.oninfo
+				]
 			| \colorpicker =>
-				E \div c: "form-group #{sv.render or type}",
+				[
 					E \label c: 'control-label col-lg-3 pull-left' for: 'input_'+part, (sv.label or part)
 					E \div c: 'col-lg-3 col-3',
 						iin = E \input,
@@ -90,7 +100,7 @@ Tone =
 							value: (voice.get(part) or sv.default or '')
 							id: 'input_'+part
 							placeholder: (sv.onempty or '')
-							onchange: (e) ~> changed_val
+							onchange: changed_val
 							# onchange: (e) ~> @set part, if typeof sv.onchange is \function and typeof (val = sv.onchange.call(@, @_xp, e)) isnt \undefined => val else e.target.value
 					~>
 						b = E \button c: 'btn btn-default pull-left',
@@ -108,11 +118,13 @@ Tone =
 						}
 					sv.onrender
 					if sv.oninfo => E \span c: \help-block, sv.oninfo
+				]
 			| otherwise =>
 				switch type
 				| \string =>
-					E \div c: "form-group #{sv.render or type}",
+					[
 						E \label c: 'control-label col-lg-3' for: 'input_'+part, (sv.label or part)
+						# E \div c: \col-lg-8,
 						if sv.render is \textarea
 							E \textarea,
 								c: \form-control
@@ -130,15 +142,14 @@ Tone =
 								value: (voice.get(part) or sv.default or '')
 								id: 'input_'+part
 								placeholder: (sv.onempty or '')
-								onchange: ->
-									changed_val ...
-									voice.save!
+								onchange: changed_val
 								onkeyup: changed_val
 								# onkeyup: _.debounce changed_val, 2000
 								sv.onrender
 						if sv.oninfo => E \span c: \help-block, sv.oninfo
+					]
 				| \number =>
-					E \div c: "form-group #{sv.render or type}",
+					[
 						E \label c: 'control-label col-lg-3' for: 'input_'+part, (sv.label or part)
 						E \div c: \col-lg-8, ->
 							if Array.isArray sv.enum
@@ -157,12 +168,12 @@ Tone =
 									step: sv.step
 									id: 'input_'+part
 									placeholder: (sv.onempty or '')
-									onchange: changed_val
-									# onchange: (e) ~> @set part, if typeof sv.onchange is \function and typeof (val = sv.onchange.call(@, @_xp, e)) isnt \undefined => val else e.target.value
+									onchange: (e) ~> @set part, if typeof sv.onchange is \function and typeof (val = sv.onchange.call(@, @_xp, e)) isnt \undefined => val else e.target.value
 									sv.onrender
 						if sv.oninfo => E \span c: \help-block, sv.oninfo
+					]
 				| \date =>
-					E \div c: "form-group #{sv.render or type}",
+					[
 						E \label c: 'control-label col-lg-3' for: 'input_'+part, (sv.label or part)
 						E \div c: \col-lg-8,
 							E \input,
@@ -174,16 +185,20 @@ Tone =
 									@set part, new Date e.target.value
 								sv.onrender
 							if sv.oninfo => E \span c: \help-block, sv.oninfo
+					]
 				| \boolean =>
-					E \div c: "form-group #{sv.render or type}",
+					[
 						E \label c: \checkbox,
 							E \input type: \checkbox, checked: (voice.get(part) or sv.default or false)
 							sv.label
 							sv.onrender
 						if sv.oninfo => E \span c: \help-block, contentEditable: true, sv.oninfo
+					]
 				| otherwise =>
 					E \div c: 'alert alert-error', "unknown schema type: "+ sv.type
 
+			if sv.required
+				@_required_parts.push part
 			E.rC _part, el
 			return el
 
@@ -209,7 +224,6 @@ Tone =
 			onenter: ->
 				if not @states.new.renderers
 					@states.new.renderers = _.keys @_bp._blueprint.layout
-
 
 Timing =
 	'also|initialize': ->
@@ -416,10 +430,13 @@ class Meaning extends Fsm
 					d[k] = v
 			), this
 		return d
+
 	get: (path, no_default) ->
 		if @__loading
 			return "loadi___ng..."
-		if typeof (v = if ~path.indexOf '.' then get_path(@_xp, path) else @_xp[path]) is \undefined and not no_default and typeof (s = @_bp.layout[path]) isnt \undefined
+		if typeof (v = if ~path.indexOf '.' then ToolShed.obj_get_path(@_xp, path) else @_xp[path]) is \undefined and not no_default and typeof (s = @_bp.layout[path]) isnt \undefined
+			if typeof s.ref is \function
+				s.ref v
 			if typeof (v = s.default) is \function
 				v = v.call this, s
 		return v
@@ -434,7 +451,7 @@ class Meaning extends Fsm
 			return @_xp[path]
 
 		prev_val = if ~path.indexOf '.'
-			get_path(@_xp, path, val)
+			ToolShed.obj_get_path(@_xp, path, val)
 		else @_xp[path]
 
 		unless _.isEqual val, prev_val
@@ -445,7 +462,72 @@ class Meaning extends Fsm
 				@_xp[path] := val
 			@_dirty_vals[path] := val
 			@emit \set path, val
+			@validate path, (err) ->
+				if err
+					console.log "INVALID", err
+				else
+					console.log "validated"
 			return val
+			# @_is_verified = false
+
+	# TODO: deep object validation
+	validate: (path, cb) ->
+		# really the footprint of this should be:
+		# _validate = (v, def, cb) ->
+		__validate = (v, def, cb) ~>
+			def_type = switch def.type
+			| \key => \string
+			| \date => \number
+			| otherwise => def.type
+			if (tv = typeof v) isnt def_type
+				return cb {code: \ETYPE actual: tv desired: def.type}
+
+			# debugger
+			if typeof (fn = def.validate) is \function and not (ret = fn.call @, v, path)
+				cb.call @, {code: \ENOTVALID}
+			else if typeof (fn = def.validateAsync) is \function
+				throw new Error "validateAsync not yet supported"
+				ret = fn.call @, v, path, (err, new_v) ->
+					if typeof new_v isnt \undefined
+						v = new_v
+						@set path, new_v
+					cb.call @, err, v
+			else
+				cb.call this, null, v
+		_validate = (v, def, k, cb) ~>
+			__validate v, def, (err, vv) !~>
+				if err
+					if lv.required
+						if not ~@_required_parts.indexOf k
+							@_required_parts.push k
+					@emit \invalid k, err
+				else
+					if ~(idx = @_required_parts.indexOf k)
+						@_required_parts.splice idx, 1
+					@emit \valid k, vv
+				if @_required_parts.length is 0
+					@emit \all-good
+				else
+					@emit \still-need @_required_parts
+				if typeof cb is \function
+					cb.call @, err, vv
+
+
+		if typeof path is \function
+			cb = path
+			for k, v in Object.keys @_dirty_vals
+				if lv = @_bp._blueprint.layout[k]
+					_validate v, lv, k, cb
+		else
+			# if ~path.indexOf '.'
+			if lv = ToolShed.obj_get_path(@_bp._blueprint.layout, path)
+				v = ToolShed.obj_get_path(@_dirty_vals, path)
+				_validate v, lv, path, cb
+			else if typeof cb is \function
+				cb {code: \ENODEF}
+
+
+
 
 	forget: (cb) ->
 		@debug "forgetting %s", @key
@@ -456,28 +538,43 @@ class Meaning extends Fsm
 			@memory.forget @key, cb
 
 	save: (cb) ->
+		debugger
+		console.log "saving..."
+		# assert @_bp._blueprint.presence isnt \Abstract
 		if @_bp._blueprint.presence is \Abstract
 			return
+		# actually, we should be able to save, but it won't actually do anything accept for change the client and send the events
+		# this is useful if, perhaps an object acts on the behalf of anothor
+		# TODO: remove the above restriction for the future
 		if @_is_new
 			d = @exp true
+			# debugger
 			if d._rev
-				@debug.error "TODO: you have a bug somewhere... you shouldn't have a _rev ever!!"
-			@memory.create @_xp, (err, xp) ~>
+				debugger
+				console.error "TODO: you have a bug somewhere... you shouldn't have a _rev ever!!"
+			@validate (err) ->
 				if err
-					@emit \error err
+					@emit \invalid err
+					cb.call @, err
 				else
-					@emit \created, xp
-				if typeof cb is \function
-					cb ...
+					@memory.create @_xp, (err, xp) ~>
+						if err
+							@emit \error err
+						else
+							@emit \created, xp
+						if typeof cb is \function
+							cb ...
 		else if @_is_dirty
-			@debug "saving dirty experience %s <= %s", DaFunk.stringify(@_xp), DaFunk.stringify(@_dirty_vals)
-			@memory.patch @key, @_dirty_vals, (err, xp) ~>
-				if err
-					@emit \error err
-				else
-					@emit \patched, xp
-				if typeof cb is \function
-					cb ...
+			console.log "saving dirty experience", @_xp, @_dirty_vals
+			@validate (err) ->
+
+				@memory.patch @key, @_dirty_vals, (err, xp) ~>
+					if err
+						@emit \error err
+					else
+						@emit \patched, xp
+					if typeof cb is \function
+						cb ...
 		else cb.call @, void, @_xp
 
 	eventListeners:
@@ -515,7 +612,8 @@ class Meaning extends Fsm
 						if (wrong_one = @_el.childNodes[pi]) isnt part
 							@_el.removeChild wrong_one if wrong_one
 							@_el.removeChild part if part.parentNode is @_el
-							aC @_el, part, pi
+							if part isnt @_el
+								aC @_el, part, pi
 						pi++
 
 				part = @_el.childNodes[part_order.length]
@@ -539,7 +637,10 @@ class Meaning extends Fsm
 								self.replace_path data, "some title"
 							else if set_path and data
 								UniVerse.poem = data.poem
+								# eventually support hash tags on older browsers:
+								# https://github.com/defunkt/jquery-pjax
 								self.push_path data, data.title + ""
+			@_form_fields = {}
 			if part_order
 				for p in part_order =>
 					do_render.call this, p
@@ -551,7 +652,6 @@ class Meaning extends Fsm
 		removed: (el) ->
 			# TODO: when replacing the DOM element in the render function, emit this event
 			#    do a dom walk on the removed node and see if _machina is defined. if it is, emit this
-			throw new Error "wtf dude. not yet implemented"
 		destroy: ->
 			@debug "destroying..."
 			# this is a first attempt to keep things clean memorywise...
@@ -587,12 +687,12 @@ class Meaning extends Fsm
 		@_loading = null
 		@key = key = xp._key
 		@id = xp._id
-		@_is_new = false
 		@_is_new = !xp._rev
 		if @_is_dirty
 			@_is_dirty = false
 			@_dirty_vals = {}
-		#TODO: change its namespace?
+		# TODO: should we change its namespace?
+		# TODO: this needs a change because, I won't be able to stop listening
 		@memory.on "changed:#key" _.bind @'memory:changed', @
 		@memory.on "deleted:#key" _.bind @'memory:deleted', @
 		@_xp = xp
@@ -697,8 +797,6 @@ class Meaning extends Fsm
 					@_loading = key
 			else
 				throw new Error "we don't know what kind of key this is: #{id} ... unable to load"
-				# if typeof id is \object
-
 				@debug.todo "check to see if it has a key"
 				@debug.todo "@exec"
 
@@ -716,12 +814,10 @@ class Meaning extends Fsm
 			render: (E) ->
 				"TODO: new #{@namespace}... add the voice"
 
-
 		edit:
 			onenter: ->
 
 			render: (E) ->
-
 
 		ready:
 			onenter: ->
@@ -758,6 +854,8 @@ Magnetism =
 	emit: ->
 		debugger
 
+# these are old fns from the database...
+# TODO: integrate them on the client side
 embody_bp = (bp) ->
 	unless bp
 		throw new Error "can't extend empty bp #bp"
@@ -778,7 +876,6 @@ embody_bp = (bp) ->
 						embodies.unshift incantation
 				embody_bps.push bpz
 				embody_bp_.push bpz.incantation
-
 
 		embody_bps.unshift get_bp bp.encantador, bp.encantador
 		embody_bp_.unshift bp.encantador
